@@ -19,9 +19,10 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 ## Voraussetzungen (Requirements)
 
 - Python 3.6 oder höher
-- Keine zusätzlichen Dependencies erforderlich (nur Standard-Bibliothek)
+- MariaDB Server (für Datenbankverbindung)
+- `mysql-connector-python` (für Datenbankoperationen): `pip install mysql-connector-python`
 
-*Python 3.6 or higher required. No additional dependencies needed (only standard library).*
+*Python 3.6 or higher required. MariaDB server (for database connection). mysql-connector-python for database operations: `pip install mysql-connector-python`*
 
 ## Installation
 
@@ -31,7 +32,32 @@ git clone https://github.com/FPfotenhauer/SVWS-Anonym.git
 cd SVWS-Anonym
 ```
 
-2. Das Skript ausführbar machen (optional):
+2. Python-Abhängigkeiten installieren:
+```bash
+pip install mysql-connector-python
+```
+
+3. Konfigurationsdatei erstellen:
+```bash
+cp config.example.json config.json
+```
+
+4. `config.json` bearbeiten und die Datenbankverbindungsparameter anpassen:
+```json
+{
+  "database": {
+    "host": "localhost",
+    "port": 3306,
+    "charset": "utf8mb4"
+  }
+}
+```
+
+**Hinweis:** Datenbankname, Benutzername und Passwort werden beim Programmstart abgefragt und nicht in der Konfigurationsdatei gespeichert.
+
+*Note: Database name, username and password are prompted at program startup and not stored in the configuration file.*
+
+4. Das Skript ausführbar machen (optional):
 ```bash
 chmod +x svws_anonym.py
 ```
@@ -44,14 +70,63 @@ chmod +x svws_anonym.py
 python svws_anonym.py
 ```
 
-Dies lädt die Namenslisten und zeigt Beispiel-Anonymisierungen an.
+Zeigt Beispiel-Anonymisierungen an, ohne die Datenbank zu ändern.
 
-*This loads the name lists and shows example anonymizations.*
+*Shows example anonymizations without modifying the database.*
+
+### Datenbank anonymisieren (Anonymize Database)
+
+```bash
+python svws_anonym.py --anonymize
+```
+
+Verbindet sich mit der Datenbank und anonymisiert alle Namen in beiden Tabellen (`K_Lehrer` und `Schueler`):
+
+**K_Lehrer Tabelle:**
+- `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch basierend auf dem `Geschlecht` Feld)
+- `Nachname` wird durch einen zufälligen Nachnamen ersetzt
+
+**Schueler Tabelle:**
+- `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
+- `Name` wird durch einen zufälligen Nachnamen ersetzt
+- `Zusatz` (zusätzliche Vornamen) wird mit zufälligen Namen des gleichen Geschlechts ersetzt, wobei der neue `Vorname` enthalten sein muss
+- `Geburtsname` wird durch einen zufälligen Nachnamen ersetzt (nur wenn nicht NULL)
+
+- Geschlecht-Werte: 3 = männlich, 4 = weiblich, 5/6 = neutral (zufälliges Geschlecht)
+
+Das Programm fragt nach Datenbankname, Benutzername und Passwort für die Datenbankverbindung.
+
+*Connects to the database and anonymizes all names in both tables (`K_Lehrer` and `Schueler`). The program prompts for database name, username and password.*
+
+### Dry-Run Modus (Dry-Run Mode)
+
+```bash
+python svws_anonym.py --dry-run
+```
+
+Zeigt an, welche Änderungen vorgenommen würden, ohne die Datenbank tatsächlich zu ändern.
+
+*Shows what changes would be made without actually modifying the database.*
+
+### Mit benutzerdefinierter Konfiguration (With custom configuration)
+
+```bash
+python svws_anonym.py --config /path/to/config.json --anonymize
+```
 
 ### Programmatische Verwendung (Programmatic Usage)
 
 ```python
-from svws_anonym import NameAnonymizer
+from svws_anonym import NameAnonymizer, DatabaseConfig
+
+# Datenbankkonfiguration laden
+db_config = DatabaseConfig()  # Lädt config.json aus dem aktuellen Verzeichnis
+# oder mit benutzerdefiniertem Pfad:
+# db_config = DatabaseConfig("/path/to/config.json")
+
+# Verbindungsparameter abrufen
+conn_params = db_config.get_connection_params()
+print(f"Verbinde mit Datenbank: {db_config.database}")
 
 # Anonymizer initialisieren
 anonymizer = NameAnonymizer()
@@ -66,6 +141,20 @@ new_lastname = anonymizer.anonymize_lastname("Mustermann")
 # Vollständige Namen anonymisieren
 firstname, lastname = anonymizer.anonymize_fullname("Max", "Mustermann", gender='m')
 ```
+
+## Konfigurationsdatei (Configuration File)
+
+Die `config.json` enthält die Datenbankverbindungsparameter für den MariaDB-Server:
+
+- `host`: Hostname oder IP-Adresse des Datenbankservers (Standard: localhost)
+- `port`: Port des Datenbankservers (Standard: 3306)
+- `charset`: Zeichensatz (Standard: utf8mb4)
+
+**Datenbankname, Benutzername und Passwort** werden beim Programmstart interaktiv abgefragt und nicht in der Konfigurationsdatei gespeichert. Dies erhöht die Sicherheit, da keine Zugangsdaten im Klartext gespeichert werden.
+
+**Wichtig:** Die `config.json` wird nicht ins Git-Repository eingecheckt. Verwenden Sie `config.example.json` als Vorlage.
+
+*The `config.json` file contains database connection parameters for the MariaDB server. Database name, username and password are prompted interactively at program startup and not stored in the configuration file. This improves security by not storing credentials in plain text. Important: `config.json` is not checked into the git repository. Use `config.example.json` as a template.*
 
 ## Namenslisten (Name Lists)
 
