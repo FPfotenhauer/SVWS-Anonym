@@ -8,7 +8,8 @@ from unittest.mock import Mock, MagicMock, patch
 import sys
 import os
 
-# Add parent directory to path
+# Add parent directory to path for importing svws_anonym module
+# This allows the test to run standalone without package installation
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from svws_anonym import SVWSAnonymizer

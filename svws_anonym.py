@@ -160,7 +160,7 @@ class SVWSAnonymizer:
         self.connection.commit()
         print(f"\n✓ Anonymisierung von Schema '{schema}' abgeschlossen!")
 
-    def _get_anonymization_rules(self) -> Dict[str, Dict[str, Any]]:
+    def _get_anonymization_rules(self) -> Dict[str, Any]:
         """
         Define anonymization rules for common column patterns.
 
