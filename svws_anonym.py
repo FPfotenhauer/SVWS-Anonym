@@ -7,10 +7,12 @@ real names with randomly generated German names from the JSON-Namen repository.
 """
 
 import argparse
+import calendar
 import csv
 import json
 import random
 import sys
+from datetime import date, datetime
 from getpass import getpass
 from pathlib import Path
 
@@ -278,7 +280,7 @@ class DatabaseAnonymizer:
             ort_name_by_id = {r["ID"]: r[ort_name_key] for r in ort_records}
 
             cursor.execute(
-                "SELECT ID, Vorname, Nachname, Geschlecht, Kuerzel, Email, EmailDienstlich FROM K_Lehrer"
+                "SELECT ID, Vorname, Nachname, Geschlecht, Kuerzel, Email, EmailDienstlich, Tel, Handy, LIDKrz, Geburtsdatum FROM K_Lehrer"
             )
             records = cursor.fetchall()
 
@@ -291,6 +293,7 @@ class DatabaseAnonymizer:
             existing_kuerzel = {r["Kuerzel"] for r in records if r.get("Kuerzel")}
             existing_email = {r["Email"] for r in records if r.get("Email")}
             existing_email_dienst = {r["EmailDienstlich"] for r in records if r.get("EmailDienstlich")}
+            existing_lidkrz = {r["LIDKrz"] for r in records if r.get("LIDKrz")}
 
             for record in records:
                 record_id = record["ID"]
@@ -300,6 +303,10 @@ class DatabaseAnonymizer:
                 old_kuerzel = record.get("Kuerzel")
                 old_email = record.get("Email")
                 old_email_dienst = record.get("EmailDienstlich")
+                old_tel = record.get("Tel")
+                old_handy = record.get("Handy")
+                old_lidkrz = record.get("LIDKrz")
+                old_geburtsdatum = record.get("Geburtsdatum")
 
                 gender = self.anonymizer.get_gender_from_geschlecht(geschlecht)
 
@@ -314,6 +321,21 @@ class DatabaseAnonymizer:
                     new_vorname, new_nachname, existing_email_dienst, "dienst.l.example.com"
                 )
 
+                new_tel = f"01234-{random.randint(0, 999999):06d}"
+                new_handy = f"01709-{random.randint(0, 999999):06d}"
+
+                base_lid = (new_kuerzel or "").upper()
+                lid_candidate = base_lid[:4] or "XXXX"
+                if lid_candidate in existing_lidkrz:
+                    prefix3 = base_lid[:3] or "XXX"
+                    counter = 1
+                    while True:
+                        lid_candidate = f"{prefix3}{counter}"
+                        if lid_candidate not in existing_lidkrz:
+                            break
+                        counter += 1
+                existing_lidkrz.add(lid_candidate)
+
                 new_ort_id = random.choice(available_ort_ids)
                 new_ort_name = ort_name_by_id.get(new_ort_id)
                 new_strasse = None
@@ -324,6 +346,25 @@ class DatabaseAnonymizer:
                 if not new_strasse and all_streets:
                     # Fallback: any street from file when Ort not found
                     new_strasse = random.choice(all_streets)
+
+                def randomize_birth_day(value):
+                    if not value:
+                        return value
+                    base_date = None
+                    if isinstance(value, datetime):
+                        base_date = value.date()
+                    elif isinstance(value, date):
+                        base_date = value
+                    else:
+                        try:
+                            base_date = datetime.strptime(str(value), "%Y-%m-%d").date()
+                        except Exception:
+                            return value
+                    _, days_in_month = calendar.monthrange(base_date.year, base_date.month)
+                    new_day = random.randint(1, days_in_month)
+                    return date(base_date.year, base_date.month, new_day)
+
+                new_geburtsdatum = randomize_birth_day(old_geburtsdatum)
                 new_hausnr = random.randint(1, 100)
                 new_hausnr_zusatz = None
 
@@ -336,19 +377,27 @@ class DatabaseAnonymizer:
                         f"Kuerzel: {old_kuerzel} -> {new_kuerzel}; "
                         f"Email: {old_email} -> {new_email}; "
                         f"EmailDienstlich: {old_email_dienst} -> {new_email_dienst}; "
+                        f"Tel: {old_tel} -> {new_tel}; "
+                        f"Handy: {old_handy} -> {new_handy}; "
+                        f"LIDKrz: {old_lidkrz} -> {lid_candidate}; "
+                        f"Geburtsdatum: {old_geburtsdatum} -> {new_geburtsdatum}; "
                         f"Ort_ID -> {new_ort_id}; Ortsteil_ID -> NULL; Strassenname -> {new_strasse}; HausNr -> {new_hausnr}; HausNrZusatz -> NULL"
                     )
                 else:
                     update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE K_Lehrer SET Vorname = %s, Nachname = %s, Kuerzel = %s, Email = %s, EmailDienstlich = %s, "
-                        "Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s WHERE ID = %s",
+                        "Tel = %s, Handy = %s, LIDKrz = %s, Geburtsdatum = %s, Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s WHERE ID = %s",
                         (
                             new_vorname,
                             new_nachname,
                             new_kuerzel,
                             new_email,
                             new_email_dienst,
+                            new_tel,
+                            new_handy,
+                            lid_candidate,
+                            new_geburtsdatum,
                             new_ort_id,
                             None,
                             new_strasse,
