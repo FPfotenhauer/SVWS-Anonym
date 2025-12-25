@@ -1,5 +1,5 @@
 # SVWS-Anonym
-Anonymisiserungstool für SVWS Datenbanken
+Anonymisierungstool für SVWS Datenbanken
 
 ## Name Lists
 
