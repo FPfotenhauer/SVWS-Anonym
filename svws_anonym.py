@@ -731,6 +731,67 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_lehrer_abschnittsdaten(self, dry_run=False):
+        """Update LehrerAbschnittsdaten.StammschulNr to 123456."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'LehrerAbschnittsdaten'")
+            if not cursor.fetchone():
+                print("\nSkipping LehrerAbschnittsdaten update: table not found")
+                return 0
+
+            # Get all records
+            cursor.execute("SELECT ID, StammschulNr FROM LehrerAbschnittsdaten")
+            records = cursor.fetchall()
+            
+            if not records:
+                print("\nNo records found in LehrerAbschnittsdaten table")
+                return 0
+
+            print(f"\nFound {len(records)} records in LehrerAbschnittsdaten table")
+            
+            if dry_run:
+                print("\nDRY RUN - LehrerAbschnittsdaten changes:")
+
+            updated_count = 0
+            for record in records:
+                record_id = record.get("ID")
+                old_stammschulnr = record.get("StammschulNr")
+                new_stammschulnr = "123456"
+                
+                if dry_run:
+                    print(f"  ID {record_id}: StammschulNr {old_stammschulnr} -> {new_stammschulnr}")
+                else:
+                    update_cursor = self.connection.cursor()
+                    update_cursor.execute(
+                        "UPDATE LehrerAbschnittsdaten SET StammschulNr = %s WHERE ID = %s",
+                        (new_stammschulnr, record_id)
+                    )
+                    update_cursor.close()
+                
+                updated_count += 1
+
+            if not dry_run:
+                self.connection.commit()
+                print(f"\nSuccessfully updated {updated_count} records in LehrerAbschnittsdaten table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def anonymize_eigene_schule_logo(self, dry_run=False):
         """Replace logo in EigeneSchule_Logo table with provided base64 data."""
         if not self.connection:
@@ -846,6 +907,7 @@ def main():
                 db_anonymizer.anonymize_eigene_schule_email(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_lehrer(dry_run=args.dry_run)
                 db_anonymizer.anonymize_credentials_lernplattformen(dry_run=args.dry_run)
+                db_anonymizer.anonymize_lehrer_abschnittsdaten(dry_run=args.dry_run)
                 db_anonymizer.anonymize_schueler(dry_run=args.dry_run)
                 db_anonymizer.anonymize_eigene_schule_logo(dry_run=args.dry_run)
             finally:

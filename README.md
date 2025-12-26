@@ -15,6 +15,17 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - Geschlechtsspezifische Vornamen (Gender-specific first names)
 - Konsistente Zuordnung (Consistent mapping across multiple occurrences)
 - Verwendung authentischer deutscher Namen (Uses authentic German names)
+- Randomisierung von Geburtsdaten (Tag bleibt im gleichen Monat/Jahr)
+- Generierung von IdentNr1 aus Geburtsdatum und Geschlecht
+- E-Mail- und Telefonnummer-Generierung
+- Adressdaten-Integration aus CSV-Dateien
+- Schulinformations-Anonymisierung mit spezifischen Werten
+- SMTP-Konfigurations-Anonymisierung
+- Logo-Ersetzung (Base64)
+- Lernplattform-Anmeldedaten-Anonymisierung
+- Lehrerabschnittsdaten-Anonymisierung
+
+*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement, learning platform credentials, and teacher section data anonymization.*
 
 ## Voraussetzungen (Requirements)
 
@@ -80,23 +91,53 @@ Zeigt Beispiel-Anonymisierungen an, ohne die Datenbank zu ändern.
 python svws_anonym.py --anonymize
 ```
 
-Verbindet sich mit der Datenbank und anonymisiert alle Namen in beiden Tabellen (`K_Lehrer` und `Schueler`):
+Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
+
+**EigeneSchule Tabelle:**
+- `SchulNr` wird auf "123456" gesetzt
+- `Bezeichnung1` wird auf "Städtische Schule" gesetzt
+- `Bezeichnung2` wird auf "am Stadtgarten" gesetzt
+- `Bezeichnung3` wird auf "Ganztagsschule des Landes NRW" gesetzt
+- Adresse: Hauptstrasse 56, 42107 Wuppertal
+- Kontaktdaten: Telefon, Fax, E-Mail, Webseite werden anonymisiert
+
+**EigeneSchule_Email Tabelle:**
+- SMTP-Konfiguration wird standardisiert (Port 25, StartTLS aktiviert, TLS deaktiviert)
+- `Domain` und `SMTPServer` werden auf NULL/leer gesetzt
+
+**EigeneSchule_Logo Tabelle:**
+- Logo wird durch ein standardisiertes Base64-kodiertes Bild ersetzt
 
 **K_Lehrer Tabelle:**
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch basierend auf dem `Geschlecht` Feld)
 - `Nachname` wird durch einen zufälligen Nachnamen ersetzt
+- `Kuerzel` wird aus den ersten Buchstaben von Vorname und Nachname generiert
+- `Email` und `EmailDienstlich` werden mit neuen Namen generiert (@schule.nrw.de)
+- `Tel` und `Handy` werden mit zufälligen Telefonnummern ersetzt
+- `Geburtsdatum` wird randomisiert (Tag wird zufällig geändert, Monat und Jahr bleiben erhalten)
+- `IdentNr1` wird aus Geburtsdatum (TTMMJJ) und Geschlecht generiert (z.B. "1008703")
+- `LIDKrz` wird mit zufälligen Anmeldeinformationen versehen
+- Adressdaten (`Ort_ID`, `Strassenname`, `HausNr`, `HausNrZusatz`) werden aus CSV-Daten zugewiesen
+
+**CredentialsLernplattformen Tabelle:**
+- `Benutzername` wird auf Format "Vorname.Nachname" gesetzt (basierend auf K_Lehrer Namen via LehrerLernplattform)
+
+**LehrerAbschnittsdaten Tabelle:**
+- `StammschulNr` wird auf "123456" gesetzt
 
 **Schueler Tabelle:**
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
 - `Name` wird durch einen zufälligen Nachnamen ersetzt
 - `Zusatz` (zusätzliche Vornamen) wird mit zufälligen Namen des gleichen Geschlechts ersetzt, wobei der neue `Vorname` enthalten sein muss
 - `Geburtsname` wird durch einen zufälligen Nachnamen ersetzt (nur wenn nicht NULL)
+- `Email` und weitere Kontaktdaten werden anonymisiert
+- Adressdaten werden ähnlich wie bei K_Lehrer behandelt
 
-- Geschlecht-Werte: 3 = männlich, 4 = weiblich, 5/6 = neutral (zufälliges Geschlecht)
+**Geschlecht-Werte:** 3 = männlich, 4 = weiblich, 5/6 = neutral (zufälliges Geschlecht)
 
 Das Programm fragt nach Datenbankname, Benutzername und Passwort für die Datenbankverbindung.
 
-*Connects to the database and anonymizes all names in both tables (`K_Lehrer` and `Schueler`). The program prompts for database name, username and password.*
+*Connects to the database and anonymizes the following tables: EigeneSchule (school information with standardized values), EigeneSchule_Email (SMTP configuration), EigeneSchule_Logo (base64 logo), K_Lehrer (teachers with comprehensive field anonymization including names, emails, phones, birthdate randomization, IdentNr1 generation, addresses from CSV), CredentialsLernplattformen (username format), LehrerAbschnittsdaten (StammschulNr), and Schueler (students with similar comprehensive anonymization). The program prompts for database name, username and password.*
 
 ### Dry-Run Modus (Dry-Run Mode)
 
@@ -160,9 +201,14 @@ Die `config.json` enthält die Datenbankverbindungsparameter für den MariaDB-Se
 
 Das Tool verwendet die folgenden JSON-Dateien aus dem [JSON-Namen Repository](https://github.com/FPfotenhauer/JSON-Namen):
 
-- `nachnamen.json`: 1000+ deutsche Nachnamen
-- `vornamen_m.json`: 500+ männliche Vornamen
-- `vornamen_w.json`: 500+ weibliche Vornamen
+- `nachnamen.json`: 2000 deutsche Nachnamen
+- `vornamen_m.json`: 500 männliche Vornamen
+- `vornamen_w.json`: 500 weibliche Vornamen
+
+Zusätzlich wird eine CSV-Datei für Adressdaten verwendet:
+- `strassen.csv`: Straßendaten mit Ort_ID, PLZ, Ort und Straßenname für realistische Adresszuordnung
+
+*The tool uses the following JSON files from the JSON-Namen repository: nachnamen.json (2000 German last names), vornamen_m.json (500 male first names), vornamen_w.json (500 female first names). Additionally, a CSV file is used for address data: strassen.csv with location IDs, postal codes, cities and street names for realistic address assignment.*
 
 ## Lizenz (License)
 
