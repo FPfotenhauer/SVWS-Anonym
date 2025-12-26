@@ -22,13 +22,14 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - Schulinformations-Anonymisierung mit spezifischen Werten
 - Teilstandort-Anonymisierung (setzt einen Hauptstandort-Eintrag)
 - SMTP-Konfigurations-Anonymisierung
-- Logo-Ersetzung (Base64)
+- Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
 - Lernplattform-Anmeldedaten-Anonymisierung (Lehrer und Schüler)
 - Lehrerabschnittsdaten-Anonymisierung
-- Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
 - Schülervermerke-Löschung (vollständige Bereinigung)
+- SchuelerErzAdr-Anonymisierung (Eltern-/Erzieherdaten)
+- K_AllgAdresse-Anonymisierung (allgemeine Adressen mit Namen, Adressen, Kontaktdaten)
 
-*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, and complete deletion of student notes.*
+*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, complete deletion of student notes, parent/guardian data anonymization, and general address anonymization with names, addresses, and contact information.*
 
 ## Voraussetzungen (Requirements)
 
@@ -148,6 +149,24 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Bemerkungen` ← NULL
 
 **Schueler Tabelle:**
+- `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
+- `Name` wird durch einen zufälligen Nachnamen ersetzt
+- `Geburtsdatum` wird randomisiert (Tag wird zufällig geändert, Monat und Jahr bleiben erhalten)
+- `Geburtsort` wird auf "Testort" gesetzt (wenn nicht NULL, sonst NULL)
+- Adressdaten (`Ort_ID`, `Strassenname`, `HausNr`) werden aus CSV-Daten zugewiesen
+
+**K_AllgAdresse Tabelle:**
+- `AllgAdrName1` wird auf zwei zufällige Nachnamen kombiniert wie "Name1 und Name2" gesetzt
+- `AllgAdrName2`, `AllgAdrHausNrZusatz`, `AllgOrtsteil_ID` ← NULL
+- `AllgAdrStrassenname` wird auf einen zufälligen Straßennamen aus CSV-Daten gesetzt
+- `AllgAdrHausNr` wird auf eine Zufallszahl zwischen 1 und 100 gesetzt
+- `AllgAdrOrt_ID` wird auf eine zufällig existierende Ort-ID aus K_Ort gesetzt
+- `AllgAdrTelefon1` wird auf "01234-" + 6 zufällige Ziffern gesetzt (z.B. "01234-567890")
+- `AllgAdrTelefon2`, `AllgAdrFax` ← NULL
+- `AllgAdrEmail` wird auf `AllgAdrName1` ohne Leerzeichen + "@betrieb.example.com" gesetzt (z.B. "MülleundSchmidt@betrieb.example.com")
+- `AllgAdrBemerkungen`, `AllgAdrZusatz1`, `AllgAdrZusatz2` ← NULL
+
+```
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
 - `Name` wird durch einen zufälligen Nachnamen ersetzt
 - `Zusatz` (zusätzliche Vornamen) wird mit zufälligen Namen des gleichen Geschlechts ersetzt, wobei der neue `Vorname` enthalten sein muss

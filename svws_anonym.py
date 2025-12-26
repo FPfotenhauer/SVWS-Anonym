@@ -469,7 +469,7 @@ class DatabaseAnonymizer:
 
         try:
             cursor.execute(
-                "SELECT ID, Vorname, Name, Zusatz, Geburtsname, Geschlecht, Email, SchulEmail, Geburtsdatum, Ausweisnummer FROM Schueler"
+                "SELECT ID, Vorname, Name, Zusatz, Geburtsname, Geschlecht, Email, SchulEmail, Geburtsdatum, Ausweisnummer, Geburtsort FROM Schueler"
             )
             records = cursor.fetchall()
 
@@ -566,6 +566,7 @@ class DatabaseAnonymizer:
                 old_schul_email = record.get("SchulEmail")
                 old_geburtsdatum = record.get("Geburtsdatum")
                 old_ausweis = record.get("Ausweisnummer")
+                old_geburtsort = record.get("Geburtsort")
 
                 gender = self.anonymizer.get_gender_from_geschlecht(geschlecht)
 
@@ -628,6 +629,9 @@ class DatabaseAnonymizer:
                 new_hausnr_zusatz = None
 
                 new_ortsteil_id = None
+                
+                # Set Geburtsort to "Testort" when not NULL
+                new_geburtsort = "Testort" if old_geburtsort is not None else None
 
                 if dry_run:
                     gender_str = {3: "männlich", 4: "weiblich", 5: "neutral", 6: "neutral"}.get(
@@ -646,11 +650,12 @@ class DatabaseAnonymizer:
                         f"  Ort_ID -> {new_ort_id}; Ortsteil_ID -> {new_ortsteil_id}; "
                         f"Strassenname -> {new_strasse}; HausNr -> {new_hausnr}; HausNrZusatz -> {new_hausnr_zusatz}"
                     )
+                    print(f"  Geburtsort: {old_geburtsort} -> {new_geburtsort}")
                 else:
                     update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE Schueler SET Vorname = %s, Name = %s, Zusatz = %s, Geburtsname = %s, Geburtsdatum = %s, Ausweisnummer = %s, Email = %s, SchulEmail = %s, "
-                        "Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s WHERE ID = %s",
+                        "Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s, Geburtsort = %s WHERE ID = %s",
                         (
                             new_vorname,
                             new_name,
@@ -665,6 +670,7 @@ class DatabaseAnonymizer:
                             new_strasse,
                             new_hausnr,
                             new_hausnr_zusatz,
+                            new_geburtsort,
                             record_id,
                         ),
                     )
@@ -1590,6 +1596,144 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_k_allg_adresse(self, dry_run=False):
+        """Anonymize K_AllgAdresse table by setting AllgAdrName1 to two random last names and clearing other fields."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_AllgAdresse'")
+            if not cursor.fetchone():
+                print("\nSkipping K_AllgAdresse anonymization: table not found")
+                return 0
+
+            # Get all existing Ort IDs
+            cursor.execute("SELECT ID FROM K_Ort")
+            ort_ids = [row['ID'] for row in cursor.fetchall()]
+            if not ort_ids:
+                print("\nWarning: No Ort IDs found in K_Ort table")
+                return 0
+
+            # Load streets from Strassen.csv
+            street_index = {}
+            streets_path = Path(__file__).parent / "Strassen.csv"
+            if streets_path.exists():
+                with open(streets_path, "r", encoding="utf-8") as f:
+                    reader = csv.reader(f)
+                    next(reader, None)  # Skip header
+                    for row in reader:
+                        if len(row) >= 2:
+                            ort = (row[0] or "").strip()
+                            strasse = (row[1] or "").strip()
+                            if ort and strasse:
+                                street_index.setdefault(ort.lower(), []).append(strasse)
+            
+            all_streets = [s for streets in street_index.values() for s in streets]
+            if not all_streets:
+                print("\nWarning: No streets loaded from Strassen.csv")
+                all_streets = ["Teststraße"]  # Fallback
+
+            cursor.execute("SELECT ID, AllgAdrName1, AllgAdrName2, AllgAdrHausNrZusatz, AllgOrtsteil_ID, AllgAdrStrassenname, AllgAdrHausNr, AllgAdrOrt_ID, AllgAdrTelefon1, AllgAdrTelefon2, AllgAdrFax, AllgAdrEmail, AllgAdrBemerkungen, AllgAdrZusatz1, AllgAdrZusatz2 FROM K_AllgAdresse")
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo records found in K_AllgAdresse table")
+                return 0
+
+            print(f"\nFound {len(records)} records in K_AllgAdresse table")
+
+            if dry_run:
+                print("\nDRY RUN - K_AllgAdresse changes:")
+
+            updated_count = 0
+            for record in records:
+                record_id = record.get("ID")
+                old_name1 = record.get("AllgAdrName1")
+                old_name2 = record.get("AllgAdrName2")
+                old_hausnr_zusatz = record.get("AllgAdrHausNrZusatz")
+                old_ortsteil_id = record.get("AllgOrtsteil_ID")
+                old_strassenname = record.get("AllgAdrStrassenname")
+                old_hausnr = record.get("AllgAdrHausNr")
+                old_ort_id = record.get("AllgAdrOrt_ID")
+                old_telefon1 = record.get("AllgAdrTelefon1")
+                old_telefon2 = record.get("AllgAdrTelefon2")
+                old_fax = record.get("AllgAdrFax")
+                old_email = record.get("AllgAdrEmail")
+                old_bemerkungen = record.get("AllgAdrBemerkungen")
+                old_zusatz1 = record.get("AllgAdrZusatz1")
+                old_zusatz2 = record.get("AllgAdrZusatz2")
+
+                # Generate two different random last names and combine with " und "
+                # Use unique seed based on record_id to ensure different names each time
+                name1 = self.anonymizer.anonymize_lastname(f"seed1_{record_id}")
+                name2 = self.anonymizer.anonymize_lastname(f"seed2_{record_id}")
+                # Ensure names are different
+                while name1 == name2:
+                    name2 = self.anonymizer.anonymize_lastname(f"seed2_{record_id}_retry")
+                new_name1 = f"{name1} und {name2}"
+
+                # Generate random street name and house number
+                new_strassenname = random.choice(all_streets)
+                new_hausnr = str(random.randint(1, 100))
+                
+                # Select random Ort_ID from K_Ort
+                new_ort_id = random.choice(ort_ids)
+                
+                # Generate random phone number: "01234-" + 6 random digits
+                new_telefon1 = f"01234-{random.randint(100000, 999999)}"
+                
+                # Generate email from AllgAdrName1 without blanks
+                new_email = f"{new_name1.replace(' ', '')}@betrieb.example.com"
+
+                if dry_run:
+                    print(f"  ID {record_id}: AllgAdrName1 {old_name1} -> {new_name1}, "
+                          f"AllgAdrName2 {old_name2} -> NULL, "
+                          f"AllgAdrHausNrZusatz {old_hausnr_zusatz} -> NULL, "
+                          f"AllgOrtsteil_ID {old_ortsteil_id} -> NULL, "
+                          f"AllgAdrStrassenname {old_strassenname} -> {new_strassenname}, "
+                          f"AllgAdrHausNr {old_hausnr} -> {new_hausnr}, "
+                          f"AllgAdrOrt_ID {old_ort_id} -> {new_ort_id}, "
+                          f"AllgAdrTelefon1 {old_telefon1} -> {new_telefon1}, "
+                          f"AllgAdrTelefon2 {old_telefon2} -> NULL, "
+                          f"AllgAdrFax {old_fax} -> NULL, "
+                          f"AllgAdrEmail {old_email} -> {new_email}, "
+                          f"AllgAdrBemerkungen {old_bemerkungen} -> NULL, "
+                          f"AllgAdrZusatz1 {old_zusatz1} -> NULL, "
+                          f"AllgAdrZusatz2 {old_zusatz2} -> NULL")
+                else:
+                    update_cursor = self.connection.cursor()
+                    update_cursor.execute(
+                        "UPDATE K_AllgAdresse SET AllgAdrName1 = %s, AllgAdrName2 = NULL, "
+                        "AllgAdrHausNrZusatz = NULL, AllgOrtsteil_ID = NULL, "
+                        "AllgAdrStrassenname = %s, AllgAdrHausNr = %s, AllgAdrOrt_ID = %s, "
+                        "AllgAdrTelefon1 = %s, AllgAdrTelefon2 = NULL, AllgAdrFax = NULL, "
+                        "AllgAdrEmail = %s, AllgAdrBemerkungen = NULL, AllgAdrZusatz1 = NULL, "
+                        "AllgAdrZusatz2 = NULL WHERE ID = %s",
+                        (new_name1, new_strassenname, new_hausnr, new_ort_id, new_telefon1, new_email, record_id),
+                    )
+                    update_cursor.close()
+
+                updated_count += 1
+
+            if not dry_run:
+                self.connection.commit()
+                print(f"\nSuccessfully anonymized {updated_count} records in K_AllgAdresse table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def anonymize_lehrer_abschnittsdaten(self, dry_run=False):
         """Update LehrerAbschnittsdaten.StammschulNr to 123456."""
         if not self.connection:
@@ -1665,6 +1809,11 @@ class DatabaseAnonymizer:
                 print("\nSkipping EigeneSchule_Logo update: table 'EigeneSchule_Logo' not found")
                 return 0
 
+            # Get the EigeneSchule ID
+            cursor.execute("SELECT ID FROM EigeneSchule LIMIT 1")
+            result = cursor.fetchone()
+            eigene_schule_id = result["ID"] if result else 1
+
             # Read logo from PNG file and convert to base64
             import base64
             logo_path = Path(__file__).parent / "Wappenzeichen_NRW_color.png"
@@ -1683,14 +1832,14 @@ class DatabaseAnonymizer:
             if dry_run:
                 print("\nDRY RUN - EigeneSchule_Logo update:")
                 print(f"  Existing rows: {total} -> will delete all")
-                print(f"  Will insert EigeneSchule_ID=1 with LogoBase64 length {len(logo_base64)}")
+                print(f"  Will insert EigeneSchule_ID={eigene_schule_id} with LogoBase64 length {len(logo_base64)}")
                 return total
             else:
                 update_cursor = self.connection.cursor()
                 update_cursor.execute("DELETE FROM EigeneSchule_Logo")
                 update_cursor.execute(
                     "INSERT INTO EigeneSchule_Logo (EigeneSchule_ID, LogoBase64) VALUES (%s, %s)",
-                    (1, logo_base64),
+                    (eigene_schule_id, logo_base64),
                 )
                 update_cursor.close()
                 self.connection.commit()
@@ -1790,6 +1939,9 @@ def main():
                 db_anonymizer.clear_schueler_erzadr_misc(dry_run=args.dry_run)
                 db_anonymizer.clear_schueler_erzadr_bemerkungen(dry_run=args.dry_run)
                 db_anonymizer.delete_schueler_vermerke(dry_run=args.dry_run)
+                
+                # K_AllgAdresse operations
+                db_anonymizer.anonymize_k_allg_adresse(dry_run=args.dry_run)
             finally:
                 db_anonymizer.disconnect()
                 print("\nDatabase connection closed")
