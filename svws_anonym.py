@@ -368,6 +368,12 @@ class DatabaseAnonymizer:
                 new_hausnr = random.randint(1, 100)
                 new_hausnr_zusatz = None
 
+                # Generate IdentNr1 from birthdate (ddmmyy) + gender
+                new_ident_nr1 = None
+                if new_geburtsdatum and geschlecht:
+                    birth_str = new_geburtsdatum.strftime("%d%m%y")
+                    new_ident_nr1 = f"{birth_str}{geschlecht}"
+
                 if dry_run:
                     gender_str = {3: "männlich", 4: "weiblich", 5: "neutral", 6: "neutral"}.get(
                         geschlecht, "unbekannt"
@@ -387,7 +393,7 @@ class DatabaseAnonymizer:
                     update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE K_Lehrer SET Vorname = %s, Nachname = %s, Kuerzel = %s, Email = %s, EmailDienstlich = %s, "
-                        "Tel = %s, Handy = %s, LIDKrz = %s, Geburtsdatum = %s, Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s WHERE ID = %s",
+                        "Tel = %s, Handy = %s, LIDKrz = %s, Geburtsdatum = %s, IdentNr1 = %s, Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s WHERE ID = %s",
                         (
                             new_vorname,
                             new_nachname,
@@ -398,6 +404,7 @@ class DatabaseAnonymizer:
                             new_handy,
                             lid_candidate,
                             new_geburtsdatum,
+                            new_ident_nr1,
                             new_ort_id,
                             None,
                             new_strasse,
@@ -505,6 +512,272 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_eigene_schule(self, dry_run=False):
+        """Anonymize EigeneSchule table with fake school data."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'EigeneSchule'")
+            if not cursor.fetchone():
+                print("\nSkipping EigeneSchule update: table 'EigeneSchule' not found")
+                return 0
+
+            cursor.execute("SELECT * FROM EigeneSchule")
+            records = cursor.fetchall()
+            
+            if not records:
+                print("\nNo records found in EigeneSchule table")
+                return 0
+
+            print(f"\nFound {len(records)} records in EigeneSchule table")
+            
+            if dry_run:
+                print("\nDRY RUN - EigeneSchule changes:")
+
+            updated_count = 0
+            for record in records:
+                record_id = record.get("ID")
+                
+                # Set specific values as requested
+                new_schulnr = "123456"
+                new_schultraegernr = None
+                new_bezeichnung1 = "Städtische Schule"
+                new_bezeichnung2 = "am Stadtgarten"
+                new_bezeichnung3 = "Ganztagsschule des Landes NRW"
+                new_strassenname = "Hauptstrasse"
+                new_hausnr = "56"
+                new_hausnrzusatz = None
+                new_plz = "42107"
+                new_ort = "Wuppertal"
+                new_telefon = "0202-5551234"
+                new_fax = "0202-5556667"
+                new_email = "schule@schule.example.com"
+                new_webadresse = "https://schule123456.schule.de"
+                
+                if dry_run:
+                    print(f"  ID {record_id}: Would update SchulNr=123456, SchultraegerNr=NULL, Bezeichnung1-3, Strassenname, HausNr, HausNrZusatz, PLZ, Ort, Telefon, Fax, Email, WebAdresse")
+                else:
+                    update_cursor = self.connection.cursor()
+                    update_cursor.execute(
+                        "UPDATE EigeneSchule SET SchulNr = %s, SchultraegerNr = %s, Bezeichnung1 = %s, Bezeichnung2 = %s, Bezeichnung3 = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s, PLZ = %s, Ort = %s, Telefon = %s, Fax = %s, Email = %s, WebAdresse = %s WHERE ID = %s",
+                        (new_schulnr, new_schultraegernr, new_bezeichnung1, new_bezeichnung2, new_bezeichnung3, new_strassenname, new_hausnr, new_hausnrzusatz, new_plz, new_ort, new_telefon, new_fax, new_email, new_webadresse, record_id)
+                    )
+                    update_cursor.close()
+                
+                updated_count += 1
+
+            if not dry_run:
+                self.connection.commit()
+                print(f"\nSuccessfully anonymized {updated_count} records in EigeneSchule table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def anonymize_eigene_schule_email(self, dry_run=False):
+        """Anonymize EigeneSchule_Email table with specific values."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'EigeneSchule_Email'")
+            if not cursor.fetchone():
+                print("\nSkipping EigeneSchule_Email update: table 'EigeneSchule_Email' not found")
+                return 0
+
+            cursor.execute("SELECT * FROM EigeneSchule_Email")
+            records = cursor.fetchall()
+            
+            if not records:
+                print("\nNo records found in EigeneSchule_Email table")
+                return 0
+
+            print(f"\nFound {len(records)} records in EigeneSchule_Email table")
+            
+            if dry_run:
+                print("\nDRY RUN - EigeneSchule_Email changes:")
+
+            updated_count = 0
+            for record in records:
+                record_id = record.get("ID")
+                
+                # Set specific values as requested
+                new_domain = None
+                new_smtpserver = ""
+                new_smtpport = 25
+                new_smtpstarttls = 1
+                new_smtpusetls = 0
+                new_smtptrusttlshost = None
+                
+                if dry_run:
+                    print(f"  ID {record_id}: Would set Domain=NULL, SMTPServer=NULL, SMTPPort=25, SMTPStartTLS=1, SMTPUseTLS=0, SMTPTrustTLSHost=NULL")
+                else:
+                    update_cursor = self.connection.cursor()
+                    update_cursor.execute(
+                        "UPDATE EigeneSchule_Email SET Domain = %s, SMTPServer = %s, SMTPPort = %s, SMTPStartTLS = %s, SMTPUseTLS = %s, SMTPTrustTLSHost = %s WHERE ID = %s",
+                        (new_domain, new_smtpserver, new_smtpport, new_smtpstarttls, new_smtpusetls, new_smtptrusttlshost, record_id)
+                    )
+                    update_cursor.close()
+                
+                updated_count += 1
+
+            if not dry_run:
+                self.connection.commit()
+                print(f"\nSuccessfully anonymized {updated_count} records in EigeneSchule_Email table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def anonymize_credentials_lernplattformen(self, dry_run=False):
+        """Update CredentialsLernplattformen usernames based on K_Lehrer names via LehrerLernplattform."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # Check if required tables exist
+            cursor.execute("SHOW TABLES LIKE 'CredentialsLernplattformen'")
+            if not cursor.fetchone():
+                print("\nSkipping CredentialsLernplattformen update: table not found")
+                return 0
+                
+            cursor.execute("SHOW TABLES LIKE 'LehrerLernplattform'")
+            if not cursor.fetchone():
+                print("\nSkipping CredentialsLernplattformen update: LehrerLernplattform table not found")
+                return 0
+
+            # Get the mapping via LehrerLernplattform
+            cursor.execute("""
+                SELECT 
+                    c.ID as credential_id,
+                    c.Benutzername as old_username,
+                    l.Vorname,
+                    l.Nachname
+                FROM CredentialsLernplattformen c
+                JOIN LehrerLernplattform ll ON c.ID = ll.CredentialID
+                JOIN K_Lehrer l ON ll.LehrerID = l.ID
+            """)
+            records = cursor.fetchall()
+            
+            if not records:
+                print("\nNo records found to update in CredentialsLernplattformen table")
+                return 0
+
+            print(f"\nFound {len(records)} records in CredentialsLernplattformen table")
+            
+            if dry_run:
+                print("\nDRY RUN - CredentialsLernplattformen changes:")
+
+            updated_count = 0
+            for record in records:
+                credential_id = record.get("credential_id")
+                old_username = record.get("old_username")
+                vorname = record.get("Vorname")
+                nachname = record.get("Nachname")
+                
+                # Create new username as Vorname.Nachname
+                new_username = f"{vorname}.{nachname}"
+                
+                if dry_run:
+                    print(f"  Credential ID {credential_id}: {old_username} -> {new_username}")
+                else:
+                    update_cursor = self.connection.cursor()
+                    update_cursor.execute(
+                        "UPDATE CredentialsLernplattformen SET Benutzername = %s WHERE ID = %s",
+                        (new_username, credential_id)
+                    )
+                    update_cursor.close()
+                
+                updated_count += 1
+
+            if not dry_run:
+                self.connection.commit()
+                print(f"\nSuccessfully updated {updated_count} records in CredentialsLernplattformen table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def anonymize_eigene_schule_logo(self, dry_run=False):
+        """Replace logo in EigeneSchule_Logo table with provided base64 data."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # Ensure table exists
+            cursor.execute("SHOW TABLES LIKE 'EigeneSchule_Logo'")
+            if not cursor.fetchone():
+                print("\nSkipping EigeneSchule_Logo update: table 'EigeneSchule_Logo' not found")
+                return 0
+
+            # Base64 logo content provided by user
+            logo_base64 = "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"
+            
+            # Count rows
+            cursor.execute("SELECT COUNT(*) AS cnt FROM EigeneSchule_Logo")
+            row = cursor.fetchone()
+            total = row["cnt"] if row and "cnt" in row else 0
+
+            if dry_run:
+                print("\nDRY RUN - EigeneSchule_Logo update:")
+                print(f"  Existing rows: {total} -> will delete all")
+                print(f"  Will insert EigeneSchule_ID=1 with LogoBase64 length {len(logo_base64)}")
+                return total
+            else:
+                update_cursor = self.connection.cursor()
+                update_cursor.execute("DELETE FROM EigeneSchule_Logo")
+                update_cursor.execute(
+                    "INSERT INTO EigeneSchule_Logo (EigeneSchule_ID, LogoBase64) VALUES (%s, %s)",
+                    (1, logo_base64),
+                )
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully reset EigeneSchule_Logo (deleted {total} rows, inserted 1 row)")
+                return total
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
 
 def main():
     """Main entry point for the SVWS anonymization tool."""
@@ -569,8 +842,12 @@ def main():
             print("Connected successfully!")
 
             try:
+                db_anonymizer.anonymize_eigene_schule(dry_run=args.dry_run)
+                db_anonymizer.anonymize_eigene_schule_email(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_lehrer(dry_run=args.dry_run)
+                db_anonymizer.anonymize_credentials_lernplattformen(dry_run=args.dry_run)
                 db_anonymizer.anonymize_schueler(dry_run=args.dry_run)
+                db_anonymizer.anonymize_eigene_schule_logo(dry_run=args.dry_run)
             finally:
                 db_anonymizer.disconnect()
                 print("\nDatabase connection closed")
