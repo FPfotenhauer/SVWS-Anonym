@@ -20,6 +20,7 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - E-Mail- und Telefonnummer-Generierung
 - Adressdaten-Integration aus CSV-Dateien
 - Schulinformations-Anonymisierung mit spezifischen Werten
+- Teilstandort-Anonymisierung (setzt einen Hauptstandort-Eintrag)
 - SMTP-Konfigurations-Anonymisierung
 - Logo-Ersetzung (Base64)
 - Lernplattform-Anmeldedaten-Anonymisierung
@@ -105,6 +106,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - SMTP-Konfiguration wird standardisiert (Port 25, StartTLS aktiviert, TLS deaktiviert)
 - `Domain` und `SMTPServer` werden auf NULL/leer gesetzt
 
+**EigeneSchule_Teilstandorte Tabelle:**
+- Alle vorhandenen Einträge werden gelöscht und ein Eintrag wird gesetzt mit: `AdrMerkmal=A`, `PLZ=42103`, `Ort=Wuppertal`, `Strassenname=Hauptstrasse`, `HausNr=56`, `HausNrZusatz=NULL`, `Bemerkung=Hauptstandort`, `Kuerzel=WtalA`
+
 **EigeneSchule_Logo Tabelle:**
 - Logo wird durch ein standardisiertes Base64-kodiertes Bild ersetzt
 
@@ -132,6 +136,8 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Geburtsname` wird durch einen zufälligen Nachnamen ersetzt (nur wenn nicht NULL)
 - `Email` und weitere Kontaktdaten werden anonymisiert
 - Adressdaten werden ähnlich wie bei K_Lehrer behandelt
+
+
 
 **Geschlecht-Werte:** 3 = männlich, 4 = weiblich, 5/6 = neutral (zufälliges Geschlecht)
 

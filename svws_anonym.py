@@ -93,12 +93,20 @@ class NameAnonymizer:
         with open(data_dir / "vornamen_w.json", "r", encoding="utf-8") as f:
             self.vornamen_w = json.load(f)
 
-        self.name_mapping = {}
+        # Maintain separate mappings to avoid cross-gender collisions
+        # First names are keyed by (original_name, gender_code 'm'/'w'/None)
+        # Last names are keyed by original_name only
+        self.firstname_mapping = {}
+        self.lastname_mapping = {}
 
     def anonymize_firstname(self, name, gender=None):
         """Anonymize a first name."""
-        if not name or name in self.name_mapping:
-            return self.name_mapping.get(name, "")
+        if not name:
+            return ""
+
+        key = (name, gender)
+        if key in self.firstname_mapping:
+            return self.firstname_mapping[key]
 
         if gender == "m":
             name_list = self.vornamen_m
@@ -108,16 +116,19 @@ class NameAnonymizer:
             name_list = random.choice([self.vornamen_m, self.vornamen_w])
 
         new_name = random.choice(name_list)
-        self.name_mapping[name] = new_name
+        self.firstname_mapping[key] = new_name
         return new_name
 
     def anonymize_lastname(self, name):
         """Anonymize a last name."""
-        if not name or name in self.name_mapping:
-            return self.name_mapping.get(name, "")
+        if not name:
+            return ""
+
+        if name in self.lastname_mapping:
+            return self.lastname_mapping[name]
 
         new_name = random.choice(self.nachnamen)
-        self.name_mapping[name] = new_name
+        self.lastname_mapping[name] = new_name
         return new_name
 
     def anonymize_fullname(self, firstname, lastname, gender=None):
@@ -129,9 +140,11 @@ class NameAnonymizer:
 
     def get_gender_from_geschlecht(self, geschlecht_value):
         """Convert SVWS Geschlecht value to gender code."""
-        if geschlecht_value == 3:
+        # Handle both string and integer values
+        val = str(geschlecht_value) if geschlecht_value is not None else None
+        if val == "3":
             return "m"
-        if geschlecht_value == 4:
+        if val == "4":
             return "w"
         return None
 
