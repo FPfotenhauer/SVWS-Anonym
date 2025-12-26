@@ -166,6 +166,13 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `AllgAdrEmail` wird auf `AllgAdrName1` ohne Leerzeichen + "@betrieb.example.com" gesetzt (z.B. "MülleundSchmidt@betrieb.example.com")
 - `AllgAdrBemerkungen`, `AllgAdrZusatz1`, `AllgAdrZusatz2` ← NULL
 
+**AllgAdrAnsprechpartner Tabelle:**
+- `Name` wird durch einen zufälligen Nachnamen ersetzt
+- `Vorname` wird durch einen zufälligen Vornamen ersetzt
+- `Email` wird auf `Name@betrieb.example.com` gesetzt (z.B. "Mueller@betrieb.example.com")
+- `Titel` ← NULL
+- `Telefon` wird auf "01234-" + 6 zufällige Ziffern gesetzt (z.B. "01234-123456")
+
 ```
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
 - `Name` wird durch einen zufälligen Nachnamen ersetzt

@@ -1854,6 +1854,86 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_allg_adr_ansprechpartner(self, dry_run=False):
+        """Anonymize AllgAdrAnsprechpartner table with random names, emails, and phone numbers."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'AllgAdrAnsprechpartner'")
+            if not cursor.fetchone():
+                print("\nSkipping AllgAdrAnsprechpartner anonymization: table not found")
+                return 0
+
+            cursor.execute("SELECT ID, Name, Vorname, Email, Titel, Telefon FROM AllgAdrAnsprechpartner")
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo records found in AllgAdrAnsprechpartner table")
+                return 0
+
+            print(f"\nFound {len(records)} records in AllgAdrAnsprechpartner table")
+
+            if dry_run:
+                print("\nDRY RUN - AllgAdrAnsprechpartner changes:")
+
+            updated_count = 0
+            for record in records:
+                record_id = record.get("ID")
+                old_name = record.get("Name")
+                old_vorname = record.get("Vorname")
+                old_email = record.get("Email")
+                old_titel = record.get("Titel")
+                old_telefon = record.get("Telefon")
+
+                # Generate random first name and last name
+                # Use record_id based seeds to ensure different names for each record
+                new_vorname = self.anonymizer.anonymize_firstname(f"seed_vorname_{record_id}")
+                new_name = self.anonymizer.anonymize_lastname(f"seed_name_{record_id}")
+
+                # Generate email from new Name without spaces and special characters
+                email_name = new_name.replace(" ", "").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue")
+                new_email = f"{email_name}@betrieb.example.com"
+
+                # Generate phone number: "01234-" + 6 random digits
+                new_telefon = f"01234-{random.randint(100000, 999999)}"
+
+                if dry_run:
+                    print(f"  ID {record_id}: Name {old_name} -> {new_name}, "
+                          f"Vorname {old_vorname} -> {new_vorname}, "
+                          f"Email {old_email} -> {new_email}, "
+                          f"Titel {old_titel} -> NULL, "
+                          f"Telefon {old_telefon} -> {new_telefon}")
+                else:
+                    update_cursor = self.connection.cursor()
+                    update_cursor.execute(
+                        "UPDATE AllgAdrAnsprechpartner SET Name = %s, Vorname = %s, "
+                        "Email = %s, Titel = NULL, Telefon = %s WHERE ID = %s",
+                        (new_name, new_vorname, new_email, new_telefon, record_id),
+                    )
+                    update_cursor.close()
+
+                updated_count += 1
+
+            if not dry_run:
+                self.connection.commit()
+                print(f"\nSuccessfully anonymized {updated_count} records in AllgAdrAnsprechpartner table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
 
 def main():
     """Main entry point for the SVWS anonymization tool."""
@@ -1942,6 +2022,9 @@ def main():
                 
                 # K_AllgAdresse operations
                 db_anonymizer.anonymize_k_allg_adresse(dry_run=args.dry_run)
+                
+                # AllgAdrAnsprechpartner operations
+                db_anonymizer.anonymize_allg_adr_ansprechpartner(dry_run=args.dry_run)
             finally:
                 db_anonymizer.disconnect()
                 print("\nDatabase connection closed")
