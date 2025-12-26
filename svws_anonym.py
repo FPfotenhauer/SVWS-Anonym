@@ -1029,8 +1029,15 @@ class DatabaseAnonymizer:
                 print("\nSkipping EigeneSchule_Logo update: table 'EigeneSchule_Logo' not found")
                 return 0
 
-            # Base64 logo content provided by user
-            logo_base64 = "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAq5HpUWHRSYXcgcHJvZmlsZSB0eXBlIGV4aWYAAHjatZxpchw50qT/4xR9BOzLcbCazQ3m+PM4skhRVFGtb2xG6rdJFZOZACLCwz0QSLP/9/865j//+Y+zNXkTU6m55Wz5E1tsvvNNtc+f56uz8f7//TM/fuZ+/9x8/sDzUeBreP6Z9+v6zufp1y+U+Pp8/P65KfN1n/q6kfu88f0T9GR9/7quvm4U/PO5e/3btNfv9fhlOq///Hzd9nXz7/+OhcVYifsFb/wOLlj+/z4lPP/1+7Xzk8xF7n7v7//H8MPamc9vvy3e53ff1s721+fh96UwNr8uyN/W6PW5S98+D5+P8b+NyP168m8/iNs3+/XPl7U7Z9Vz9jO7HjMrlc1rUh9Tud9x4eBW4f5a5m/hv8T35f5t/K1McWKxhTUHf6dxzXlW+7joluvuuH2/TjcZYvTbF756P324n9VQfPMzyARRf93xJbSwTKhYY2K1wMf+cyzuPrfd501XefJyXOkdN3PXgt/+mncf/t/8/bzROXJdRwB+rhXj8vJphiHL6f+5CoO481rTdNf3/jVf/MZ+MWzAgukuc2WC3Y7nFiO5X74Vrp0D1yUbjX1Cw5X1ugFLxLMTg3EBC9jsQnLZ2eJ9cY51rNinM3Ifoh9YwKXklzMH2wQiofjq9Wx+p7h7rU/++RhowRAp5FAwTQsdY8WY8J8SKz7UU0jRpJRyKqmmlnoOOeaUcy5ZGNVLKLGkkksptbTSa6ixppprqbW22ptvAQhLLbdiWm2t9c5DO7fu/Hbnit6HH2HEkUYeZdTRRp+4z4wzzTzLrLPNvvwKi/BfeRWz6mqrb7dxpR132nmXXXfb/eBrJ5x40smnHra6Z9We1n1d6u5b5b7u9Xcy2yWLzXlV9W4+PSvcy2qyWLzXlV9W4+NSPm7hBCdJNsNiPjosXmQBHNrLZra6GL0sJ5vZ5gkKwJ9RJhlnOVkMC8btfDru03a/LPdXu5kU/0d28z9Zzsh0/y8sZ2S6l+X+tNsbq61+M0q4BlIUak1tOADbdmW7dmYI9cxy7DqkydztyeMwyZQu3M5NKi2HcD12Lh5/TnS7jbPPsp0b5bwPTwuLX9uj+3J8X+u4euosiZGPGUcJWUuQhnfMCjssz5WBaC05u1pnjMbXGNouw9V03j+L4Y6++GcNK5SzTnexcS0IO+MdYzg9GC5v92oeVKs+3uVEXR9SOysr5guzXPYEvnl316JlMYyXf9vSs24yDq72/ra6HujGw3BybnTO2LmezrTCGcls/KMO/crHvARI/zAz+zk3zeyYXzM7GgIDsK8BaFoOc58Y5tQC2oplxh05No08EzdJ7hmEeTOKeH8p1bJ9OHjP5Noyl2Ddz3jnxm+e7fUVA99nml8PDT+v5NeFvMsYy4wEpCeXtjIY7jDbD9KizaV2/bDjTMctAoPEuEbniX67MIrwNHW/VnMlngAxAYk7IL733Hiq+edRjLV97yueGLWM52PBXstFiHys2J/OeBgmTC7Muyp/f6T5+sw+Tm2BRVxpzDB6X326XuLstXngpZG0dyFqag2sMTiAkYny7u+IxsY2/aQ6+5jZ7zlPCXY0m0lbIbIYrBRe3pSMudH3eT9ubOofs30mmzA9i/zx0IVNj/xsLH9dHLOHxw0wOl8NvgfIlA7YTH7rhkXCsm0x0BuSDOO8Xf761UnNb16qRQdyB6xIF+GL16MHo2LysbJ++EkDteaQP+IbfHsjzkxCbqUygeV61gNcdvwMYG9slzDeNi5nTPXE+V5FqPKsxA2IzUrU671an/PgwVjuYMFaTu/AH9cwU/AIJlL+LToe+/QGenZSc2Eh/NFysPLmBh4B8ARqD3d5sHW9k7lTTLteS6Sz+8wBUxbgWdfbND4W3PwEC29QQQhXi+tzk6tOriTYvXu+meMYnI40Al/YzHwB6BrUhmCkEFvD/yIwltdkSrgs6VNGOVJNq0WWZ5Nt6wrT+NlJA8qjI7ZeyCW4fvvvsfXFnwigU811muuj/mQ+8Hf2aT/InbDoEGy6a08+CwkvyRCCoSUjvF5LhkMe1uwu6ttQKbAhFwLD43qtK9OrJ9ky+gG1AkID7ZiDsQAN/miJiKElqvzaGqsRXpPkSIA0qL9yE7mCW5CM21a2SOuapaU8IvFvWh89wAcKmqNn23sZocMaCMXOkLDeXdpdOt66WHpCmOV3uNSOxY2B3zYSn1HGZsS/5+xIRrnT9aFypw3ZIsXUeBp3vtc70BbaA2aCTvO0Zuz9B9rpj68ns2zgdDxLFh11xbQsELddxb0J0WUB813SjsGZmRfghUSyc4wBgrjdI0wH3elX9RnihG+t7i3JqU7b164xHz/aHju5OMSjej2ml018PGPsk5z5MSSAtOzgBSzQrqW0iRrbA/50g0Yr9wRxzNCxG2uwY3xjTFIT7k86GvCrPTV6raSeNe/dibiT4vOtFP7n14SmHaJe/BKj3rvMQJKbI2ntwfA2pvcLYB12QV89aXT1JmTnQXVnMNXD7kj4hkf0RLzg7+JslfngbC5fS1rigSWDkPQ98JFKUoFoht0Qp3WwmGO3lSdRaNBKEHL8kAjD9H2RXfg9FtXhfnMUxA9/+gm9jpyJPdJ/G0V0Dkbau1OncQy9B5yOEfY0ZguOsj7yQgJ1NYUmD+w="
+            # Read logo from PNG file and convert to base64
+            import base64
+            logo_path = Path(__file__).parent / "Wappenzeichen_NRW_color.png"
+            if logo_path.exists():
+                with open(logo_path, 'rb') as f:
+                    logo_base64 = base64.b64encode(f.read()).decode('utf-8')
+            else:
+                print(f"Warning: Logo file not found at {logo_path}", file=sys.stderr)
+                logo_base64 = ""
             
             # Count rows
             cursor.execute("SELECT COUNT(*) AS cnt FROM EigeneSchule_Logo")
@@ -1126,14 +1133,19 @@ def main():
             print("Connected successfully!")
 
             try:
+                # EigeneSchule operations
                 db_anonymizer.anonymize_eigene_schule(dry_run=args.dry_run)
                 db_anonymizer.anonymize_eigene_schule_email(dry_run=args.dry_run)
                 db_anonymizer.anonymize_eigene_schule_teilstandorte(dry_run=args.dry_run)
+                db_anonymizer.anonymize_eigene_schule_logo(dry_run=args.dry_run)
+                
+                # K_Lehrer (teacher) operations
                 db_anonymizer.anonymize_k_lehrer(dry_run=args.dry_run)
                 db_anonymizer.anonymize_credentials_lernplattformen(dry_run=args.dry_run)
                 db_anonymizer.anonymize_lehrer_abschnittsdaten(dry_run=args.dry_run)
+                
+                # Schueler (student) operations
                 db_anonymizer.anonymize_schueler(dry_run=args.dry_run)
-                db_anonymizer.anonymize_eigene_schule_logo(dry_run=args.dry_run)
             finally:
                 db_anonymizer.disconnect()
                 print("\nDatabase connection closed")
