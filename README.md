@@ -27,6 +27,7 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - Lehrerabschnittsdaten-Anonymisierung
 - Schülervermerke-Löschung (vollständige Bereinigung)
 - SchuelerErzAdr-Anonymisierung (Eltern-/Erzieherdaten)
+- SchuelerTelefone-Anonymisierung (Schülertelefonummern)
 - K_AllgAdresse-Anonymisierung (allgemeine Adressen mit Namen, Adressen, Kontaktdaten)
 
 *Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, complete deletion of student notes, parent/guardian data anonymization, and general address anonymization with names, addresses, and contact information.*
@@ -172,6 +173,10 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Email` wird auf `Name@betrieb.example.com` gesetzt (z.B. "Mueller@betrieb.example.com")
 - `Titel` ← NULL
 - `Telefon` wird auf "01234-" + 6 zufällige Ziffern gesetzt (z.B. "01234-123456")
+
+**SchuelerTelefone Tabelle:**
+- `Telefonnummer` wird auf "012345-" + 6 zufällige Ziffern gesetzt (z.B. "012345-123456")
+- `Bemerkung` ← NULL
 
 ```
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)

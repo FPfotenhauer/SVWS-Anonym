@@ -1934,6 +1934,72 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_schueler_telefone(self, dry_run=False):
+        """Anonymize SchuelerTelefone table by setting Telefonnummer to '012345-' + 6 random digits and Bemerkung to NULL."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'SchuelerTelefone'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuelerTelefone: table not found")
+                return 0
+
+            # Fetch all records
+            cursor.execute("SELECT ID, Telefonnummer, Bemerkung FROM SchuelerTelefone")
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo records found in SchuelerTelefone table")
+                return 0
+
+            print(f"\nFound {len(records)} records in SchuelerTelefone table")
+
+            if dry_run:
+                print("\nDRY RUN - SchuelerTelefone changes:")
+
+            updated_count = 0
+            for record in records:
+                record_id = record.get("ID")
+                old_telefon = record.get("Telefonnummer")
+                old_bemerkung = record.get("Bemerkung")
+
+                # Generate new phone number: "012345-" + 6 random digits
+                new_telefon = f"012345-{random.randint(100000, 999999)}"
+                new_bemerkung = None
+
+                if dry_run:
+                    print(f"  ID {record_id}: Telefonnummer {old_telefon} -> {new_telefon}, "
+                          f"Bemerkung {old_bemerkung} -> NULL")
+                else:
+                    update_cursor = self.connection.cursor()
+                    update_cursor.execute(
+                        "UPDATE SchuelerTelefone SET Telefonnummer = %s, Bemerkung = %s WHERE ID = %s",
+                        (new_telefon, new_bemerkung, record_id),
+                    )
+                    update_cursor.close()
+
+                updated_count += 1
+
+            if not dry_run:
+                self.connection.commit()
+                print(f"\nSuccessfully anonymized {updated_count} records in SchuelerTelefone table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
 
 def main():
     """Main entry point for the SVWS anonymization tool."""
@@ -2019,6 +2085,7 @@ def main():
                 db_anonymizer.clear_schueler_erzadr_misc(dry_run=args.dry_run)
                 db_anonymizer.clear_schueler_erzadr_bemerkungen(dry_run=args.dry_run)
                 db_anonymizer.delete_schueler_vermerke(dry_run=args.dry_run)
+                db_anonymizer.anonymize_schueler_telefone(dry_run=args.dry_run)
                 
                 # K_AllgAdresse operations
                 db_anonymizer.anonymize_k_allg_adresse(dry_run=args.dry_run)
