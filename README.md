@@ -122,11 +122,12 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Tel` und `Handy` werden mit zufälligen Telefonnummern ersetzt
 - `Geburtsdatum` wird randomisiert (Tag wird zufällig geändert, Monat und Jahr bleiben erhalten)
 - `IdentNr1` wird aus Geburtsdatum (TTMMJJ) und Geschlecht generiert (z.B. "1008703")
-- `LIDKrz` wird mit zufälligen Anmeldeinformationen versehen
+- `LIDKrz` wird als eindeutiges, maximal 4-stelliges Kürzel generiert (Duplikate werden vermieden)
 - Adressdaten (`Ort_ID`, `Strassenname`, `HausNr`, `HausNrZusatz`) werden aus CSV-Daten zugewiesen
 
 **CredentialsLernplattformen Tabelle (Lehrer):**
 - `Benutzername` wird auf Format "Vorname.Nachname" gesetzt (basierend auf K_Lehrer Namen via LehrerLernplattform)
+ - Duplikate werden mit numerischen Suffixen behandelt (Name, Name1, Name2, etc.)
 
 **CredentialsLernplattformen Tabelle (Schüler):**
 - `Benutzername` wird auf Format "Vorname.Name" gesetzt (basierend auf Schueler Namen via SchuelerLernplattform)
@@ -137,6 +138,14 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 **SchuelerVermerke Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**SchuelerErzAdr Tabelle:**
+- `Name1` und `Name2` werden – sofern nicht NULL – auf den Wert aus `Schueler.Name` gesetzt
+- `Vorname1` und `Vorname2` werden geschlechtsabhängig aus den Namenslisten gesetzt (`Herr` → männlich, `Frau` → weiblich); bei `ErzieherArt_ID` ∈ {3, 4} wird `Schueler.Vorname` übernommen
+- Adressen: `ErzOrt_ID` ← `Schueler.Ort_ID`, `ErzOrtsteil_ID` ← NULL, `ErzStrassenname` ← "Teststrasse" (wenn vorher nicht NULL), `ErzHausNr` ← Zufallszahl 1–100 (wenn vorher nicht NULL)
+- `ErzEmail` ← `Name1@e.example.com` (wenn `Name1` nicht NULL, sonst NULL)
+- Bereinigung: `ErzEmail2`, `Erz1StaatKrz`, `Erz2StaatKrz`, `ErzAdrZusatz` ← NULL
+- `Bemerkungen` ← NULL
 
 **Schueler Tabelle:**
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
@@ -152,7 +161,7 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 Das Programm fragt nach Datenbankname, Benutzername und Passwort für die Datenbankverbindung.
 
-*Connects to the database and anonymizes the following tables: EigeneSchule (school information with standardized values), EigeneSchule_Email (SMTP configuration), EigeneSchule_Logo (base64 logo from PNG file), K_Lehrer (teachers with comprehensive field anonymization including names, emails, phones, birthdate randomization, IdentNr1 generation, addresses from CSV), CredentialsLernplattformen (username format for teachers and students with duplicate handling), LehrerAbschnittsdaten (StammschulNr), Schueler (students with similar comprehensive anonymization), and SchuelerVermerke (complete deletion). The program prompts for database name, username and password.*
+*Connects to the database and anonymizes the following tables: EigeneSchule (school information with standardized values), EigeneSchule_Email (SMTP configuration), EigeneSchule_Logo (base64 logo from PNG file), K_Lehrer (teachers with comprehensive field anonymization including names, emails, phones, birthdate randomization, IdentNr1 generation, addresses from CSV, and 4-character unique `LIDKrz`), CredentialsLernplattformen (username format for teachers and students with duplicate handling), LehrerAbschnittsdaten (StammschulNr), Schueler (students with similar comprehensive anonymization), SchuelerErzAdr (names, first names, address normalization, email and misc clears), and SchuelerVermerke (complete deletion). The program prompts for database name, username and password.*
 
 ### Dry-Run Modus (Dry-Run Mode)
 
