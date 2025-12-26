@@ -1048,6 +1048,50 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def delete_schueler_vermerke(self, dry_run=False):
+        """Delete all entries from SchuelerVermerke table."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'SchuelerVermerke'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuelerVermerke deletion: table not found")
+                return 0
+
+            # Count existing records
+            cursor.execute("SELECT COUNT(*) as count FROM SchuelerVermerke")
+            count_result = cursor.fetchone()
+            record_count = count_result.get("count", 0) if count_result else 0
+            
+            if record_count == 0:
+                print("\nNo records found in SchuelerVermerke table")
+                return 0
+
+            print(f"\nFound {record_count} records in SchuelerVermerke table")
+            
+            if dry_run:
+                print("\nDRY RUN - SchuelerVermerke would be completely cleared")
+            else:
+                delete_cursor = self.connection.cursor()
+                delete_cursor.execute("DELETE FROM SchuelerVermerke")
+                delete_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully deleted all {record_count} records from SchuelerVermerke table")
+            
+            return record_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def anonymize_lehrer_abschnittsdaten(self, dry_run=False):
         """Update LehrerAbschnittsdaten.StammschulNr to 123456."""
         if not self.connection:
@@ -1241,6 +1285,7 @@ def main():
                 # Schueler (student) operations
                 db_anonymizer.anonymize_schueler(dry_run=args.dry_run)
                 db_anonymizer.anonymize_credentials_lernplattformen_schueler(dry_run=args.dry_run)
+                db_anonymizer.delete_schueler_vermerke(dry_run=args.dry_run)
             finally:
                 db_anonymizer.disconnect()
                 print("\nDatabase connection closed")

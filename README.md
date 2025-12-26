@@ -23,10 +23,12 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - Teilstandort-Anonymisierung (setzt einen Hauptstandort-Eintrag)
 - SMTP-Konfigurations-Anonymisierung
 - Logo-Ersetzung (Base64)
-- Lernplattform-Anmeldedaten-Anonymisierung
+- Lernplattform-Anmeldedaten-Anonymisierung (Lehrer und Schüler)
 - Lehrerabschnittsdaten-Anonymisierung
+- Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
+- Schülervermerke-Löschung (vollständige Bereinigung)
 
-*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement, learning platform credentials, and teacher section data anonymization.*
+*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, and complete deletion of student notes.*
 
 ## Voraussetzungen (Requirements)
 
@@ -123,11 +125,18 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `LIDKrz` wird mit zufälligen Anmeldeinformationen versehen
 - Adressdaten (`Ort_ID`, `Strassenname`, `HausNr`, `HausNrZusatz`) werden aus CSV-Daten zugewiesen
 
-**CredentialsLernplattformen Tabelle:**
+**CredentialsLernplattformen Tabelle (Lehrer):**
 - `Benutzername` wird auf Format "Vorname.Nachname" gesetzt (basierend auf K_Lehrer Namen via LehrerLernplattform)
+
+**CredentialsLernplattformen Tabelle (Schüler):**
+- `Benutzername` wird auf Format "Vorname.Name" gesetzt (basierend auf Schueler Namen via SchuelerLernplattform)
+- Duplikate werden mit numerischen Suffixen behandelt (Name, Name1, Name2, etc.)
 
 **LehrerAbschnittsdaten Tabelle:**
 - `StammschulNr` wird auf "123456" gesetzt
+
+**SchuelerVermerke Tabelle:**
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
 
 **Schueler Tabelle:**
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
@@ -143,7 +152,7 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 Das Programm fragt nach Datenbankname, Benutzername und Passwort für die Datenbankverbindung.
 
-*Connects to the database and anonymizes the following tables: EigeneSchule (school information with standardized values), EigeneSchule_Email (SMTP configuration), EigeneSchule_Logo (base64 logo), K_Lehrer (teachers with comprehensive field anonymization including names, emails, phones, birthdate randomization, IdentNr1 generation, addresses from CSV), CredentialsLernplattformen (username format), LehrerAbschnittsdaten (StammschulNr), and Schueler (students with similar comprehensive anonymization). The program prompts for database name, username and password.*
+*Connects to the database and anonymizes the following tables: EigeneSchule (school information with standardized values), EigeneSchule_Email (SMTP configuration), EigeneSchule_Logo (base64 logo from PNG file), K_Lehrer (teachers with comprehensive field anonymization including names, emails, phones, birthdate randomization, IdentNr1 generation, addresses from CSV), CredentialsLernplattformen (username format for teachers and students with duplicate handling), LehrerAbschnittsdaten (StammschulNr), Schueler (students with similar comprehensive anonymization), and SchuelerVermerke (complete deletion). The program prompts for database name, username and password.*
 
 ### Dry-Run Modus (Dry-Run Mode)
 
