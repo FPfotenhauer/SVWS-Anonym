@@ -2454,6 +2454,52 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def delete_lehrer_fotos(self, dry_run=False):
+        """Delete all entries from LehrerFotos table."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'LehrerFotos'")
+            if not cursor.fetchone():
+                print("\nSkipping LehrerFotos deletion: table not found")
+                return 0
+
+            # Count existing records
+            cursor.execute("SELECT COUNT(*) as count FROM LehrerFotos")
+            result = cursor.fetchone()
+            record_count = result.get("count", 0) if result else 0
+
+            if record_count == 0:
+                print("\nNo records found in LehrerFotos table")
+                return 0
+
+            print(f"\nFound {record_count} records in LehrerFotos table")
+
+            if dry_run:
+                print("\nDRY RUN - LehrerFotos would be completely cleared")
+            else:
+                delete_cursor = self.connection.cursor()
+                delete_cursor.execute("DELETE FROM LehrerFotos")
+                delete_cursor.close()
+                self.connection.commit()
+                print(
+                    f"\nSuccessfully deleted all {record_count} records from LehrerFotos table"
+                )
+
+            return record_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
 
 def main():
     """Main entry point for the SVWS anonymization tool."""
@@ -2529,6 +2575,7 @@ def main():
                 db_anonymizer.anonymize_k_lehrer(dry_run=args.dry_run)
                 db_anonymizer.anonymize_credentials_lernplattformen(dry_run=args.dry_run)
                 db_anonymizer.anonymize_lehrer_abschnittsdaten(dry_run=args.dry_run)
+                db_anonymizer.delete_lehrer_fotos(dry_run=args.dry_run)
                 
                 # Schueler (student) operations
                 db_anonymizer.anonymize_schueler(dry_run=args.dry_run)
