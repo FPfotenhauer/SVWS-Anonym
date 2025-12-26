@@ -23,6 +23,7 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - Teilstandort-Anonymisierung (setzt einen Hauptstandort-Eintrag)
 - SMTP-Konfigurations-Anonymisierung
 - Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
+- EigeneSchule_Texte-Löschung (vollständige Bereinigung)
 - Lernplattform-Anmeldedaten-Anonymisierung (Lehrer und Schüler)
 - Lehrerabschnittsdaten-Anonymisierung
 - Schülervermerke-Löschung (vollständige Bereinigung)
@@ -30,7 +31,11 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - SchuelerTelefone-Anonymisierung (Schülertelefonummern)
 - SchuelerLD_PSFachBem-Anonymisierung (Fachbereichsbemerkungen clearing)
 - SchuelerLeistungsdaten-Anonymisierung (Lernentwicklung clearing)
+- Schueler-Transportfelder-Bereinigung (setzt Idext/Fahrschueler_ID/Haltestelle_ID auf NULL)
+- Schueler-Änderungsmarker (setzt ModifiziertVon auf "Admin")
+- Personengruppen_Personen-Löschung (vollständige Bereinigung)
 - K_AllgAdresse-Anonymisierung (allgemeine Adressen mit Namen, Adressen, Kontaktdaten)
+- SchuelerFotos-Löschung (vollständige Bereinigung)
 
 *Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, complete deletion of student notes, parent/guardian data anonymization, and general address anonymization with names, addresses, and contact information.*
 
@@ -118,6 +123,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **EigeneSchule_Logo Tabelle:**
 - Logo wird durch ein standardisiertes Base64-kodiertes Bild ersetzt
 
+**EigeneSchule_Texte Tabelle:**
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
+
 **K_Lehrer Tabelle:**
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch basierend auf dem `Geschlecht` Feld)
 - `Nachname` wird durch einen zufälligen Nachnamen ersetzt
@@ -157,6 +165,8 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Geburtsdatum` wird randomisiert (Tag wird zufällig geändert, Monat und Jahr bleiben erhalten)
 - `Geburtsort` wird auf "Testort" gesetzt (wenn nicht NULL, sonst NULL)
 - Adressdaten (`Ort_ID`, `Strassenname`, `HausNr`) werden aus CSV-Daten zugewiesen
+ - Transportfelder: `Idext` ← NULL, `Fahrschueler_ID` ← NULL, `Haltestelle_ID` ← NULL
+ - Änderungsmarker: `ModifiziertVon` ← "Admin"
 
 **K_AllgAdresse Tabelle:**
 - `AllgAdrName1` wird auf zwei zufällige Nachnamen kombiniert wie "Name1 und Name2" gesetzt
@@ -190,6 +200,12 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 **SchuelerLeistungsdaten Tabelle:**
 - `Lernentw` ← NULL
+
+**SchuelerFotos Tabelle:**
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**Personengruppen_Personen Tabelle:**
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
 
 ```
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
