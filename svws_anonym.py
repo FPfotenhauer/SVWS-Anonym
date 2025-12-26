@@ -2000,6 +2000,125 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def clear_schueler_leistungsdaten(self, dry_run=False):
+        """Clear Lernentw field in SchuelerLeistungsdaten table."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'SchuelerLeistungsdaten'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuelerLeistungsdaten: table not found")
+                return 0
+
+            # Fetch all records
+            cursor.execute("SELECT ID, Lernentw FROM SchuelerLeistungsdaten")
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo records found in SchuelerLeistungsdaten table")
+                return 0
+
+            print(f"\nFound {len(records)} records in SchuelerLeistungsdaten table")
+
+            if dry_run:
+                print("\nDRY RUN - SchuelerLeistungsdaten field clearing:")
+
+            updated_count = 0
+            for record in records:
+                record_id = record.get("ID")
+
+                if dry_run:
+                    print(f"  ID {record_id}: Lernentw -> NULL")
+                else:
+                    update_cursor = self.connection.cursor()
+                    update_cursor.execute(
+                        "UPDATE SchuelerLeistungsdaten SET Lernentw = NULL WHERE ID = %s",
+                        (record_id,),
+                    )
+                    update_cursor.close()
+
+                updated_count += 1
+
+            if not dry_run:
+                self.connection.commit()
+                print(f"\nSuccessfully cleared Lernentw for {updated_count} records in SchuelerLeistungsdaten table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def clear_schueler_ld_psfachbem(self, dry_run=False):
+        """Clear specific fields in SchuelerLD_PSFachBem table: ASV, LELS, AUE, ESF, BemerkungFSP, BemerkungVersetzung."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'SchuelerLD_PSFachBem'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuelerLD_PSFachBem: table not found")
+                return 0
+
+            # Fetch all records
+            cursor.execute("SELECT ID, ASV, LELS, AUE, ESF, BemerkungFSP, BemerkungVersetzung FROM SchuelerLD_PSFachBem")
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo records found in SchuelerLD_PSFachBem table")
+                return 0
+
+            print(f"\nFound {len(records)} records in SchuelerLD_PSFachBem table")
+
+            if dry_run:
+                print("\nDRY RUN - SchuelerLD_PSFachBem field clearing:")
+
+            updated_count = 0
+            for record in records:
+                record_id = record.get("ID")
+
+                if dry_run:
+                    print(f"  ID {record_id}: ASV, LELS, AUE, ESF, BemerkungFSP, BemerkungVersetzung -> NULL")
+                else:
+                    update_cursor = self.connection.cursor()
+                    update_cursor.execute(
+                        "UPDATE SchuelerLD_PSFachBem SET ASV = NULL, LELS = NULL, AUE = NULL, ESF = NULL, "
+                        "BemerkungFSP = NULL, BemerkungVersetzung = NULL WHERE ID = %s",
+                        (record_id,),
+                    )
+                    update_cursor.close()
+
+                updated_count += 1
+
+            if not dry_run:
+                self.connection.commit()
+                print(f"\nSuccessfully cleared fields for {updated_count} records in SchuelerLD_PSFachBem table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
 
 def main():
     """Main entry point for the SVWS anonymization tool."""
@@ -2086,6 +2205,8 @@ def main():
                 db_anonymizer.clear_schueler_erzadr_bemerkungen(dry_run=args.dry_run)
                 db_anonymizer.delete_schueler_vermerke(dry_run=args.dry_run)
                 db_anonymizer.anonymize_schueler_telefone(dry_run=args.dry_run)
+                db_anonymizer.clear_schueler_ld_psfachbem(dry_run=args.dry_run)
+                db_anonymizer.clear_schueler_leistungsdaten(dry_run=args.dry_run)
                 
                 # K_AllgAdresse operations
                 db_anonymizer.anonymize_k_allg_adresse(dry_run=args.dry_run)
