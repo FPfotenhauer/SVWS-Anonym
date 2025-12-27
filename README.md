@@ -22,13 +22,29 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - Schulinformations-Anonymisierung mit spezifischen Werten
 - Teilstandort-Anonymisierung (setzt einen Hauptstandort-Eintrag)
 - SMTP-Konfigurations-Anonymisierung
-- Logo-Ersetzung (Base64)
+- Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
+- EigeneSchule_Texte-Löschung (vollständige Bereinigung)
 - Lernplattform-Anmeldedaten-Anonymisierung (Lehrer und Schüler)
 - Lehrerabschnittsdaten-Anonymisierung
-- Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
 - Schülervermerke-Löschung (vollständige Bereinigung)
+- SchuelerErzAdr-Anonymisierung (Eltern-/Erzieherdaten)
+- SchuelerTelefone-Anonymisierung (Schülertelefonummern)
+- SchuelerLD_PSFachBem-Anonymisierung (Fachbereichsbemerkungen clearing)
+- SchuelerLeistungsdaten-Anonymisierung (Lernentwicklung clearing)
+- Schueler-Transportfelder-Bereinigung (setzt Idext/Fahrschueler_ID/Haltestelle_ID auf NULL)
+- Schueler-Änderungsmarker (setzt ModifiziertVon auf "Admin")
+- SchuelerGSDaten-Bereinigung (setzt Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse auf NULL)
+- Personengruppen_Personen-Löschung (vollständige Bereinigung)
+- K_AllgAdresse-Anonymisierung (allgemeine Adressen mit Namen, Adressen, Kontaktdaten)
+- SchuelerFotos-Löschung (vollständige Bereinigung)
+- SchuelerFoerderempfehlungen-Löschung (vollständige Bereinigung)
+- LehrerFotos-Löschung (vollständige Bereinigung)
+- K_Lehrer-SerNr-Anonymisierung (setzt "SerNr" auf ddddX)
+- K_Lehrer-PANr-Anonymisierung (setzt "PANr" auf PA + 7 Ziffern)
+- K_Lehrer-LBVNr-Anonymisierung (setzt "LBVNr" auf LB + 7 Ziffern)
+- Allgemeine Verwaltungs-Bereinigung (löscht Einträge aus: Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, TextExportVorlagen)
 
-*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, and complete deletion of student notes.*
+*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, teacher `SerNr` anonymization (sets to ddddX), teacher `PANr` anonymization (sets to PA + 7 digits), teacher `LBVNr` anonymization (sets to LB + 7 digits), complete deletion of student notes, parent/guardian data anonymization, SchuelerGSDaten field clearing (Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse), SchuelerFoerderempfehlungen deletion, general address anonymization with names, addresses, and contact information, and general administrative tables cleanup (deletes entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte tables, SchuleOAuthSecrets, Logins, and TextExportVorlagen).*
 
 ## Voraussetzungen (Requirements)
 
@@ -114,6 +130,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **EigeneSchule_Logo Tabelle:**
 - Logo wird durch ein standardisiertes Base64-kodiertes Bild ersetzt
 
+**EigeneSchule_Texte Tabelle:**
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
+
 **K_Lehrer Tabelle:**
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch basierend auf dem `Geschlecht` Feld)
 - `Nachname` wird durch einen zufälligen Nachnamen ersetzt
@@ -122,6 +141,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Tel` und `Handy` werden mit zufälligen Telefonnummern ersetzt
 - `Geburtsdatum` wird randomisiert (Tag wird zufällig geändert, Monat und Jahr bleiben erhalten)
 - `IdentNr1` wird aus Geburtsdatum (TTMMJJ) und Geschlecht generiert (z.B. "1008703")
+- `SerNr` wird auf eine zufällige vierstellige Zahl gefolgt von 'X' gesetzt (z. B. 0123X)
+- `PANr` wird auf "PA" gefolgt von einer zufälligen siebenstelligen Zahl gesetzt (z. B. PA0123456)
+- `LBVNr` wird auf "LB" gefolgt von einer zufälligen siebenstelligen Zahl gesetzt (z. B. LB0123456)
 - `LIDKrz` wird als eindeutiges, maximal 4-stelliges Kürzel generiert (Duplikate werden vermieden)
 - Adressdaten (`Ort_ID`, `Strassenname`, `HausNr`, `HausNrZusatz`) werden aus CSV-Daten zugewiesen
 
@@ -136,6 +158,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **LehrerAbschnittsdaten Tabelle:**
 - `StammschulNr` wird auf "123456" gesetzt
 
+**LehrerFotos Tabelle:**
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
+
 **SchuelerVermerke Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
 
@@ -148,6 +173,78 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Bemerkungen` ← NULL
 
 **Schueler Tabelle:**
+- `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
+- `Name` wird durch einen zufälligen Nachnamen ersetzt
+- `Geburtsdatum` wird randomisiert (Tag wird zufällig geändert, Monat und Jahr bleiben erhalten)
+- `Geburtsort` wird auf "Testort" gesetzt (wenn nicht NULL, sonst NULL)
+- Adressdaten (`Ort_ID`, `Strassenname`, `HausNr`) werden aus CSV-Daten zugewiesen
+ - Transportfelder: `Idext` ← NULL, `Fahrschueler_ID` ← NULL, `Haltestelle_ID` ← NULL
+ - Änderungsmarker: `ModifiziertVon` ← "Admin"
+
+**K_AllgAdresse Tabelle:**
+- `AllgAdrName1` wird auf zwei zufällige Nachnamen kombiniert wie "Name1 und Name2" gesetzt
+- `AllgAdrName2`, `AllgAdrHausNrZusatz`, `AllgOrtsteil_ID` ← NULL
+- `AllgAdrStrassenname` wird auf einen zufälligen Straßennamen aus CSV-Daten gesetzt
+- `AllgAdrHausNr` wird auf eine Zufallszahl zwischen 1 und 100 gesetzt
+- `AllgAdrOrt_ID` wird auf eine zufällig existierende Ort-ID aus K_Ort gesetzt
+- `AllgAdrTelefon1` wird auf "01234-" + 6 zufällige Ziffern gesetzt (z.B. "01234-567890")
+- `AllgAdrTelefon2`, `AllgAdrFax` ← NULL
+- `AllgAdrEmail` wird auf `AllgAdrName1` ohne Leerzeichen + "@betrieb.example.com" gesetzt (z.B. "MülleundSchmidt@betrieb.example.com")
+- `AllgAdrBemerkungen`, `AllgAdrZusatz1`, `AllgAdrZusatz2` ← NULL
+
+**AllgAdrAnsprechpartner Tabelle:**
+- `Name` wird durch einen zufälligen Nachnamen ersetzt
+- `Vorname` wird durch einen zufälligen Vornamen ersetzt
+- `Email` wird auf `Name@betrieb.example.com` gesetzt (z.B. "Mueller@betrieb.example.com")
+- `Titel` ← NULL
+- `Telefon` wird auf "01234-" + 6 zufällige Ziffern gesetzt (z.B. "01234-123456")
+
+**SchuelerTelefone Tabelle:**
+- `Telefonnummer` wird auf "012345-" + 6 zufällige Ziffern gesetzt (z.B. "012345-123456")
+- `Bemerkung` ← NULL
+
+**SchuelerLD_PSFachBem Tabelle:**
+- `ASV` ← NULL
+- `LELS` ← NULL
+- `AUE` ← NULL
+- `ESF` ← NULL
+- `BemerkungFSP` ← NULL
+- `BemerkungVersetzung` ← NULL
+
+**SchuelerLeistungsdaten Tabelle:**
+- `Lernentw` ← NULL
+
+**SchuelerFotos Tabelle:**
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**SchuelerFoerderempfehlungen Tabelle:**
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**SchuelerGSDaten Tabelle:**
+- `Anrede_Klassenlehrer` ← NULL
+- `Nachname_Klassenlehrer` ← NULL
+- `GS_Klasse` ← NULL
+
+**Personengruppen_Personen Tabelle:****
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**Allgemeine Verwaltungs-Tabellen:**
+- `Schil_Verwaltung`: Alle Einträge werden gelöscht
+- `Client_Konfiguration_Global`: Alle Einträge werden gelöscht
+- `Client_Konfiguration_Benutzer`: Alle Einträge werden gelöscht
+- `Wiedervorlage`: Alle Einträge werden gelöscht
+- `ZuordnungenReportvorlagen`: Alle Einträge werden gelöscht
+- `BenutzerEmail`: Alle Einträge werden gelöscht
+- `ImpExp_EigeneImporte`: Alle Einträge werden gelöscht
+- `ImpExp_EigeneImporte_Felder`: Alle Einträge werden gelöscht
+- `ImpExp_EigeneImporte_Tabellen`: Alle Einträge werden gelöscht
+- `SchuleOAuthSecrets`: Alle Einträge werden gelöscht
+- `Logins`: Alle Einträge werden gelöscht
+- `TextExportVorlagen`: Alle Einträge werden gelöscht
+
+*General administrative tables: deletes all entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, and TextExportVorlagen.*
+
+```
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
 - `Name` wird durch einen zufälligen Nachnamen ersetzt
 - `Zusatz` (zusätzliche Vornamen) wird mit zufälligen Namen des gleichen Geschlechts ersetzt, wobei der neue `Vorname` enthalten sein muss
