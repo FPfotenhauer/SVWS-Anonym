@@ -24,6 +24,7 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - SMTP-Konfigurations-Anonymisierung
 - Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
 - EigeneSchule_Texte-Löschung (vollständige Bereinigung)
+- SchuleCredentials-Reset (generiert neue RSA 2048-bit Schlüsselpaare und AES 256-bit Schlüssel)
 - Lernplattform-Anmeldedaten-Anonymisierung (Lehrer und Schüler)
 - Lehrerabschnittsdaten-Anonymisierung
 - Schülervermerke-Löschung (vollständige Bereinigung)
@@ -51,8 +52,9 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - Python 3.6 oder höher
 - MariaDB Server (für Datenbankverbindung)
 - `mysql-connector-python` (für Datenbankoperationen): `pip install mysql-connector-python`
+- `cryptography` (für RSA/AES Schlüsselgenerierung): `pip install cryptography`
 
-*Python 3.6 or higher required. MariaDB server (for database connection). mysql-connector-python for database operations: `pip install mysql-connector-python`*
+*Python 3.6 or higher required. MariaDB server (for database connection). mysql-connector-python for database operations: `pip install mysql-connector-python`. cryptography for RSA/AES key generation: `pip install cryptography`*
 
 ## Installation
 
@@ -61,10 +63,10 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 git clone https://github.com/FPfotenhauer/SVWS-Anonym.git
 cd SVWS-Anonym
 ```
-
 2. Python-Abhängigkeiten installieren:
 ```bash
-pip install mysql-connector-python
+pip install mysql-connector-python cryptography
+``` install mysql-connector-python
 ```
 
 3. Konfigurationsdatei erstellen:
@@ -132,6 +134,13 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 **EigeneSchule_Texte Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**SchuleCredentials Tabelle:**
+- Alle Einträge werden gelöscht
+- Neuer Eintrag wird erstellt mit `Schulnummer` aus `EigeneSchule.SchulNr`
+- `RSAPublicKey`: Neu generierter RSA 2048-bit öffentlicher Schlüssel (PEM-Format)
+- `RSAPrivateKey`: Neu generierter RSA 2048-bit privater Schlüssel (PEM-Format)
+- `AES`: Neu generierter AES 256-bit Schlüssel (Base64-kodiert)
 
 **K_Lehrer Tabelle:**
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch basierend auf dem `Geschlecht` Feld)

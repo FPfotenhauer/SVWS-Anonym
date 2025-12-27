@@ -7,6 +7,7 @@ real names with randomly generated German names from the JSON-Namen repository.
 """
 
 import argparse
+import base64
 import calendar
 import csv
 import json
@@ -22,6 +23,16 @@ try:
     MYSQL_AVAILABLE = True
 except ImportError:
     MYSQL_AVAILABLE = False
+
+try:
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.backends import default_backend
+    import secrets
+    
+    CRYPTOGRAPHY_AVAILABLE = True
+except ImportError:
+    CRYPTOGRAPHY_AVAILABLE = False
 
 
 class DatabaseConfig:
@@ -2467,6 +2478,117 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def reset_schule_credentials(self, dry_run=False):
+        """Reset SchuleCredentials table with new RSA keypair and AES key.
+        
+        Deletes all entries, retrieves SchulNr from EigeneSchule, generates:
+        - RSA 2048-bit keypair (public and private keys in PEM format)
+        - AES 256-bit key (base64 encoded)
+        """
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        if not CRYPTOGRAPHY_AVAILABLE:
+            print("\nWarning: cryptography library not available. Skipping SchuleCredentials reset.")
+            print("Install it with: pip install cryptography", file=sys.stderr)
+            return 0
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'SchuleCredentials'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuleCredentials reset: table not found")
+                return 0
+
+            # Get SchulNr from EigeneSchule
+            cursor.execute("SELECT SchulNr FROM EigeneSchule LIMIT 1")
+            result = cursor.fetchone()
+            if not result:
+                print("\nWarning: No SchulNr found in EigeneSchule table")
+                return 0
+            
+            schulnr = result.get("SchulNr")
+            print(f"\nResetting SchuleCredentials with SchulNr: {schulnr}")
+
+            # Count existing records
+            cursor.execute("SELECT COUNT(*) as count FROM SchuleCredentials")
+            count_result = cursor.fetchone()
+            record_count = count_result.get("count", 0) if count_result else 0
+
+            if dry_run:
+                print("\nDRY RUN - SchuleCredentials reset:")
+                if record_count > 0:
+                    print(f"  Would delete {record_count} existing records")
+                print(f"  Would generate new RSA 2048-bit keypair")
+                print(f"  Would generate new AES 256-bit key")
+                print(f"  Would insert new record with Schulnummer={schulnr}")
+                return record_count
+
+            # Generate RSA 2048-bit keypair
+            print("  Generating RSA 2048-bit keypair...")
+            private_key = rsa.generate_private_key(
+                public_exponent=65537,
+                key_size=2048,
+                backend=default_backend()
+            )
+            public_key = private_key.public_key()
+
+            # Serialize private key to PEM format
+            private_pem_full = private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption()
+            ).decode('utf-8')
+
+            # Serialize public key to PEM format
+            public_pem_full = public_key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            ).decode('utf-8')
+            
+            # Remove PEM headers/footers, keeping only the base64 content
+            private_pem = '\n'.join([line for line in private_pem_full.split('\n') 
+                                     if not line.startswith('-----')])
+            public_pem = '\n'.join([line for line in public_pem_full.split('\n') 
+                                    if not line.startswith('-----')])
+
+            # Generate AES 256-bit key (32 bytes)
+            print("  Generating AES 256-bit key...")
+            aes_key = secrets.token_bytes(32)
+            aes_key_base64 = base64.b64encode(aes_key).decode('utf-8')
+
+            # Delete existing records
+            delete_cursor = self.connection.cursor()
+            if record_count > 0:
+                delete_cursor.execute("DELETE FROM SchuleCredentials")
+                print(f"  Deleted {record_count} existing records")
+
+            # Insert new record with generated keys
+            delete_cursor.execute(
+                "INSERT INTO SchuleCredentials (Schulnummer, RSAPublicKey, RSAPrivateKey, AES) VALUES (%s, %s, %s, %s)",
+                (schulnr, public_pem, private_pem, aes_key_base64)
+            )
+            delete_cursor.close()
+            self.connection.commit()
+            
+            print(f"  Successfully inserted new credentials")
+            print(f"  RSA Public Key length: {len(public_pem)} bytes")
+            print(f"  RSA Private Key length: {len(private_pem)} bytes")
+            print(f"  AES Key (base64): {len(aes_key_base64)} characters")
+            print(f"\nSuccessfully reset SchuleCredentials table")
+
+            return record_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def delete_schueler_fotos(self, dry_run=False):
         """Delete all entries from SchuelerFotos table."""
         if not self.connection:
@@ -2795,6 +2917,7 @@ def main():
                 db_anonymizer.anonymize_eigene_schule_teilstandorte(dry_run=args.dry_run)
                 db_anonymizer.anonymize_eigene_schule_logo(dry_run=args.dry_run)
                 db_anonymizer.delete_eigene_schule_texte(dry_run=args.dry_run)
+                db_anonymizer.reset_schule_credentials(dry_run=args.dry_run)
                 
                 # K_Lehrer (teacher) operations
                 db_anonymizer.anonymize_k_lehrer(dry_run=args.dry_run)
