@@ -2510,6 +2510,86 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def delete_general_admin_tables(self, dry_run=False):
+        """Delete all entries from general/admin-related tables.
+
+        Tables targeted:
+        - Schild_Verwaltung
+        - Client_Konfiguration_Global
+        - Client_Konfiguration_Benutzer (and common typo variant lient_Konfiguration_Benutzer)
+        - Wiedervorlage
+        - ZuordnungenReportvorlagen
+        - BenutzerEmail
+        - ImpExp_EigeneImporte
+        - ImpExp_EigeneImporte_Felder
+        - ImpExp_EigeneImporte_Tabellen
+        - SchuleOAuthSecrets
+        - Logins
+        """
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        targets = [
+            "Schild_Verwaltung",
+            "Client_Konfiguration_Global",
+            "Client_Konfiguration_Benutzer",
+            "lient_Konfiguration_Benutzer",  # handle possible typo
+            "Wiedervorlage",
+            "ZuordnungenReportvorlagen",
+            "BenutzerEmail",
+            "ImpExp_EigeneImporte",
+            "ImpExp_EigeneImporte_Felder",
+            "ImpExp_EigeneImporte_Tabellen",
+            "SchuleOAuthSecrets",
+            "Logins",
+        ]
+
+        total_deleted = 0
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            print("\nGeneral admin tables cleanup:")
+            for table in targets:
+                # Check existence
+                cursor.execute(f"SHOW TABLES LIKE '{table}'")
+                if not cursor.fetchone():
+                    print(f"  Skipping {table}: table not found")
+                    continue
+
+                # Count records
+                cursor.execute(f"SELECT COUNT(*) as count FROM {table}")
+                result = cursor.fetchone()
+                record_count = result.get("count", 0) if result else 0
+
+                if record_count == 0:
+                    print(f"  {table}: no records to delete")
+                    continue
+
+                if dry_run:
+                    print(f"  {table}: would delete {record_count} records")
+                else:
+                    delete_cursor = self.connection.cursor()
+                    delete_cursor.execute(f"DELETE FROM {table}")
+                    delete_cursor.close()
+                    print(f"  {table}: deleted {record_count} records")
+                    total_deleted += record_count
+
+            if not dry_run and total_deleted > 0:
+                self.connection.commit()
+                print(f"\nSuccessfully deleted {total_deleted} records across general admin tables")
+            elif dry_run:
+                print("\nDry run complete for general admin tables cleanup")
+
+            return total_deleted
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
 
 def main():
     """Main entry point for the SVWS anonymization tool."""
@@ -2611,6 +2691,9 @@ def main():
                 
                 # AllgAdrAnsprechpartner operations
                 db_anonymizer.anonymize_allg_adr_ansprechpartner(dry_run=args.dry_run)
+
+                # General admin tables cleanup
+                db_anonymizer.delete_general_admin_tables(dry_run=args.dry_run)
             finally:
                 db_anonymizer.disconnect()
                 print("\nDatabase connection closed")

@@ -40,8 +40,9 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - K_Lehrer-SerNr-Anonymisierung (setzt "SerNr" auf ddddX)
 - K_Lehrer-PANr-Anonymisierung (setzt "PANr" auf PA + 7 Ziffern)
 - K_Lehrer-LBVNr-Anonymisierung (setzt "LBVNr" auf LB + 7 Ziffern)
+- Allgemeine Verwaltungs-Bereinigung (löscht Einträge aus: Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins)
 
-*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, teacher `SerNr` anonymization (sets to ddddX), complete deletion of student notes, parent/guardian data anonymization, and general address anonymization with names, addresses, and contact information.*
+*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, teacher `SerNr` anonymization (sets to ddddX), teacher `PANr` anonymization (sets to PA + 7 digits), teacher `LBVNr` anonymization (sets to LB + 7 digits), complete deletion of student notes, parent/guardian data anonymization, general address anonymization with names, addresses, and contact information, and general administrative tables cleanup (deletes entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte tables, SchuleOAuthSecrets, and Logins).*
 
 ## Voraussetzungen (Requirements)
 
@@ -216,6 +217,21 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 **Personengruppen_Personen Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**Allgemeine Verwaltungs-Tabellen:**
+- `Schil_Verwaltung`: Alle Einträge werden gelöscht
+- `Client_Konfiguration_Global`: Alle Einträge werden gelöscht
+- `Client_Konfiguration_Benutzer`: Alle Einträge werden gelöscht
+- `Wiedervorlage`: Alle Einträge werden gelöscht
+- `ZuordnungenReportvorlagen`: Alle Einträge werden gelöscht
+- `BenutzerEmail`: Alle Einträge werden gelöscht
+- `ImpExp_EigeneImporte`: Alle Einträge werden gelöscht
+- `ImpExp_EigeneImporte_Felder`: Alle Einträge werden gelöscht
+- `ImpExp_EigeneImporte_Tabellen`: Alle Einträge werden gelöscht
+- `SchuleOAuthSecrets`: Alle Einträge werden gelöscht
+- `Logins`: Alle Einträge werden gelöscht
+
+*General administrative tables: deletes all entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, and Logins.*
 
 ```
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
