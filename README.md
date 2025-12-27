@@ -37,8 +37,11 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - K_AllgAdresse-Anonymisierung (allgemeine Adressen mit Namen, Adressen, Kontaktdaten)
 - SchuelerFotos-Löschung (vollständige Bereinigung)
 - LehrerFotos-Löschung (vollständige Bereinigung)
+- K_Lehrer-SerNr-Anonymisierung (setzt "SerNr" auf ddddX)
+- K_Lehrer-PANr-Anonymisierung (setzt "PANr" auf PA + 7 Ziffern)
+- K_Lehrer-LBVNr-Anonymisierung (setzt "LBVNr" auf LB + 7 Ziffern)
 
-*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, complete deletion of student notes, parent/guardian data anonymization, and general address anonymization with names, addresses, and contact information.*
+*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, teacher `SerNr` anonymization (sets to ddddX), complete deletion of student notes, parent/guardian data anonymization, and general address anonymization with names, addresses, and contact information.*
 
 ## Voraussetzungen (Requirements)
 
@@ -135,6 +138,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Tel` und `Handy` werden mit zufälligen Telefonnummern ersetzt
 - `Geburtsdatum` wird randomisiert (Tag wird zufällig geändert, Monat und Jahr bleiben erhalten)
 - `IdentNr1` wird aus Geburtsdatum (TTMMJJ) und Geschlecht generiert (z.B. "1008703")
+- `SerNr` wird auf eine zufällige vierstellige Zahl gefolgt von 'X' gesetzt (z. B. 0123X)
+- `PANr` wird auf "PA" gefolgt von einer zufälligen siebenstelligen Zahl gesetzt (z. B. PA0123456)
+- `LBVNr` wird auf "LB" gefolgt von einer zufälligen siebenstelligen Zahl gesetzt (z. B. LB0123456)
 - `LIDKrz` wird als eindeutiges, maximal 4-stelliges Kürzel generiert (Duplikate werden vermieden)
 - Adressdaten (`Ort_ID`, `Strassenname`, `HausNr`, `HausNrZusatz`) werden aus CSV-Daten zugewiesen
 

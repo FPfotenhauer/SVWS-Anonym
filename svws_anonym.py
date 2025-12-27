@@ -293,7 +293,7 @@ class DatabaseAnonymizer:
             ort_name_by_id = {r["ID"]: r[ort_name_key] for r in ort_records}
 
             cursor.execute(
-                "SELECT ID, Vorname, Nachname, Geschlecht, Kuerzel, Email, EmailDienstlich, Tel, Handy, LIDKrz, Geburtsdatum FROM K_Lehrer"
+                "SELECT ID, Vorname, Nachname, Geschlecht, Kuerzel, Email, EmailDienstlich, Tel, Handy, LIDKrz, Geburtsdatum, SerNr, PANr, LBVNr FROM K_Lehrer"
             )
             records = cursor.fetchall()
 
@@ -319,6 +319,9 @@ class DatabaseAnonymizer:
                 old_tel = record.get("Tel")
                 old_handy = record.get("Handy")
                 old_lidkrz = record.get("LIDKrz")
+                old_sernr = record.get("SerNr")
+                old_panr = record.get("PANr")
+                old_lbvnr = record.get("LBVNr")
                 old_geburtsdatum = record.get("Geburtsdatum")
 
                 gender = self.anonymizer.get_gender_from_geschlecht(geschlecht)
@@ -394,6 +397,9 @@ class DatabaseAnonymizer:
                 new_geburtsdatum = randomize_birth_day(old_geburtsdatum)
                 new_hausnr = random.randint(1, 100)
                 new_hausnr_zusatz = None
+                new_sernr = f"{random.randint(0, 9999):04d}X"
+                new_panr = f"PA{random.randint(0, 9999999):07d}"
+                new_lbvnr = f"LB{random.randint(0, 9999999):07d}"
 
                 # Generate IdentNr1 from birthdate (ddmmyy) + gender
                 new_ident_nr1 = None
@@ -408,6 +414,7 @@ class DatabaseAnonymizer:
                     print(
                         f"ID {record_id} ({gender_str}): {old_vorname} {old_nachname} -> {new_vorname} {new_nachname}; "
                         f"Kuerzel: {old_kuerzel} -> {new_kuerzel}; "
+                        f"SerNr: {old_sernr} -> {new_sernr}; PANr: {old_panr} -> {new_panr}; LBVNr: {old_lbvnr} -> {new_lbvnr}; "
                         f"Email: {old_email} -> {new_email}; "
                         f"EmailDienstlich: {old_email_dienst} -> {new_email_dienst}; "
                         f"Tel: {old_tel} -> {new_tel}; "
@@ -419,12 +426,15 @@ class DatabaseAnonymizer:
                 else:
                     update_cursor = self.connection.cursor()
                     update_cursor.execute(
-                        "UPDATE K_Lehrer SET Vorname = %s, Nachname = %s, Kuerzel = %s, Email = %s, EmailDienstlich = %s, "
+                        "UPDATE K_Lehrer SET Vorname = %s, Nachname = %s, Kuerzel = %s, SerNr = %s, PANr = %s, LBVNr = %s, Email = %s, EmailDienstlich = %s, "
                         "Tel = %s, Handy = %s, LIDKrz = %s, Geburtsdatum = %s, IdentNr1 = %s, Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s WHERE ID = %s",
                         (
                             new_vorname,
                             new_nachname,
                             new_kuerzel,
+                                new_sernr,
+                            new_panr,
+                            new_lbvnr,
                             new_email,
                             new_email_dienst,
                             new_tel,
