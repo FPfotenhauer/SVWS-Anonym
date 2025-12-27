@@ -2621,6 +2621,9 @@ class DatabaseAnonymizer:
         - SchuleOAuthSecrets
         - Logins
         - TextExportVorlagen
+        - Benutzer (recreates admin entry)
+        - BenutzerAllgemein (recreates admin entry)
+        - Credentials (recreates admin entry)
         """
         if not self.connection:
             raise RuntimeError("Database connection is not established")
@@ -2640,11 +2643,20 @@ class DatabaseAnonymizer:
             "TextExportVorlagen",
         ]
 
+        # Special tables that need recreation after deletion
+        special_tables = {
+            "Credentials": "INSERT INTO Credentials (ID, Benutzername) VALUES (1, 'Admin')",
+            "BenutzerAllgemein": "INSERT INTO BenutzerAllgemein (ID, Anzeigename, CredentialID) VALUES (1, 'Administrator', 1)",
+            "Benutzer": "INSERT INTO Benutzer (ID, Typ, Allgemein_ID, Lehrer_ID, Schueler_ID, Erzieher_ID, IstAdmin) VALUES (1, 0, 1, NULL, NULL, NULL, 1)",
+        }
+
         total_deleted = 0
         try:
             cursor = self.connection.cursor(dictionary=True)
 
             print("\nGeneral admin tables cleanup:")
+            
+            # Process regular tables first
             for table in targets:
                 # Check existence
                 cursor.execute(f"SHOW TABLES LIKE '{table}'")
@@ -2669,6 +2681,33 @@ class DatabaseAnonymizer:
                     delete_cursor.close()
                     print(f"  {table}: deleted {record_count} records")
                     total_deleted += record_count
+
+            # Process special tables with recreation (order matters: Credentials -> BenutzerAllgemein -> Benutzer)
+            for table in ["Credentials", "BenutzerAllgemein", "Benutzer"]:
+                cursor.execute(f"SHOW TABLES LIKE '{table}'")
+                if not cursor.fetchone():
+                    print(f"  Skipping {table}: table not found")
+                    continue
+
+                cursor.execute(f"SELECT COUNT(*) as count FROM {table}")
+                result = cursor.fetchone()
+                record_count = result.get("count", 0) if result else 0
+
+                if dry_run:
+                    if record_count > 0:
+                        print(f"  {table}: would delete {record_count} records and recreate admin entry")
+                    else:
+                        print(f"  {table}: would recreate admin entry (no existing records)")
+                else:
+                    delete_cursor = self.connection.cursor()
+                    if record_count > 0:
+                        delete_cursor.execute(f"DELETE FROM {table}")
+                        print(f"  {table}: deleted {record_count} records")
+                        total_deleted += record_count
+                    # Recreate admin entry
+                    delete_cursor.execute(special_tables[table])
+                    delete_cursor.close()
+                    print(f"  {table}: recreated admin entry")
 
             if not dry_run and total_deleted > 0:
                 self.connection.commit()

@@ -42,7 +42,7 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - K_Lehrer-SerNr-Anonymisierung (setzt "SerNr" auf ddddX)
 - K_Lehrer-PANr-Anonymisierung (setzt "PANr" auf PA + 7 Ziffern)
 - K_Lehrer-LBVNr-Anonymisierung (setzt "LBVNr" auf LB + 7 Ziffern)
-- Allgemeine Verwaltungs-Bereinigung (löscht Einträge aus: Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, TextExportVorlagen)
+- Allgemeine Verwaltungs-Bereinigung (löscht Einträge aus: Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, TextExportVorlagen; setzt Admin-Benutzer in Benutzer, BenutzerAllgemein, Credentials zurück)
 
 *Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, teacher `SerNr` anonymization (sets to ddddX), teacher `PANr` anonymization (sets to PA + 7 digits), teacher `LBVNr` anonymization (sets to LB + 7 digits), complete deletion of student notes, parent/guardian data anonymization, SchuelerGSDaten field clearing (Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse), SchuelerFoerderempfehlungen deletion, general address anonymization with names, addresses, and contact information, and general administrative tables cleanup (deletes entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte tables, SchuleOAuthSecrets, Logins, and TextExportVorlagen).*
 
@@ -241,8 +241,11 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `SchuleOAuthSecrets`: Alle Einträge werden gelöscht
 - `Logins`: Alle Einträge werden gelöscht
 - `TextExportVorlagen`: Alle Einträge werden gelöscht
+- `Benutzer`: Alle Einträge werden gelöscht, Admin-Benutzer wird neu angelegt (ID=1, Typ=0, Allgemein_ID=1, IstAdmin=1)
+- `BenutzerAllgemein`: Alle Einträge werden gelöscht, Administrator wird neu angelegt (ID=1, Anzeigename=Administrator, CredentialID=1)
+- `Credentials`: Alle Einträge werden gelöscht, Admin-Credential wird neu angelegt (ID=1, Benutzername=Admin)
 
-*General administrative tables: deletes all entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, and TextExportVorlagen.*
+*General administrative tables: deletes all entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, and TextExportVorlagen. Recreates admin user in Benutzer, BenutzerAllgemein, and Credentials tables.*
 
 ```
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
