@@ -2326,6 +2326,55 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def clear_schueler_gsdaten(self, dry_run=False):
+        """Set SchuelerGSDaten.Anrede_Klassenlehrer, Nachname_Klassenlehrer, and GS_Klasse to NULL for all rows."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'SchuelerGSDaten'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuelerGSDaten clear: table not found")
+                return 0
+
+            # Count records
+            cursor.execute("SELECT COUNT(*) as count FROM SchuelerGSDaten")
+            result = cursor.fetchone()
+            record_count = result.get("count", 0) if result else 0
+
+            if record_count == 0:
+                print("\nNo records found in SchuelerGSDaten table for clearing")
+                return 0
+
+            print(f"\nFound {record_count} records in SchuelerGSDaten table for field clearing")
+
+            if dry_run:
+                print("\nDRY RUN - SchuelerGSDaten field clearing:")
+                print(f"  Would set Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse to NULL for {record_count} records")
+            else:
+                update_cursor = self.connection.cursor()
+                update_cursor.execute(
+                    "UPDATE SchuelerGSDaten SET Anrede_Klassenlehrer = NULL, Nachname_Klassenlehrer = NULL, GS_Klasse = NULL"
+                )
+                update_cursor.close()
+                self.connection.commit()
+                print(
+                    f"\nSuccessfully cleared fields for {record_count} records in SchuelerGSDaten table"
+                )
+
+            return record_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def delete_personengruppen_personen(self, dry_run=False):
         """Delete all entries from Personengruppen_Personen table."""
         if not self.connection:
@@ -2464,6 +2513,52 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def delete_schueler_foerderempfehlungen(self, dry_run=False):
+        """Delete all entries from SchuelerFoerderempfehlungen table."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'SchuelerFoerderempfehlungen'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuelerFoerderempfehlungen deletion: table not found")
+                return 0
+
+            # Count existing records
+            cursor.execute("SELECT COUNT(*) as count FROM SchuelerFoerderempfehlungen")
+            result = cursor.fetchone()
+            record_count = result.get("count", 0) if result else 0
+
+            if record_count == 0:
+                print("\nNo records found in SchuelerFoerderempfehlungen table")
+                return 0
+
+            print(f"\nFound {record_count} records in SchuelerFoerderempfehlungen table")
+
+            if dry_run:
+                print("\nDRY RUN - SchuelerFoerderempfehlungen would be completely cleared")
+            else:
+                delete_cursor = self.connection.cursor()
+                delete_cursor.execute("DELETE FROM SchuelerFoerderempfehlungen")
+                delete_cursor.close()
+                self.connection.commit()
+                print(
+                    f"\nSuccessfully deleted all {record_count} records from SchuelerFoerderempfehlungen table"
+                )
+
+            return record_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def delete_lehrer_fotos(self, dry_run=False):
         """Delete all entries from LehrerFotos table."""
         if not self.connection:
@@ -2516,15 +2611,16 @@ class DatabaseAnonymizer:
         Tables targeted:
         - Schild_Verwaltung
         - Client_Konfiguration_Global
-        - Client_Konfiguration_Benutzer (and common typo variant lient_Konfiguration_Benutzer)
+        - Client_Konfiguration_Benutzer
         - Wiedervorlage
-        - ZuordnungenReportvorlagen
+        - ZuordnungReportvorlagen
         - BenutzerEmail
         - ImpExp_EigeneImporte
         - ImpExp_EigeneImporte_Felder
         - ImpExp_EigeneImporte_Tabellen
         - SchuleOAuthSecrets
         - Logins
+        - TextExportVorlagen
         """
         if not self.connection:
             raise RuntimeError("Database connection is not established")
@@ -2532,16 +2628,16 @@ class DatabaseAnonymizer:
         targets = [
             "Schild_Verwaltung",
             "Client_Konfiguration_Global",
-            "Client_Konfiguration_Benutzer",
-            "lient_Konfiguration_Benutzer",  # handle possible typo
+            "Client_Konfiguration_Benutzer",            
             "Wiedervorlage",
-            "ZuordnungenReportvorlagen",
+            "ZuordnungReportvorlagen",
             "BenutzerEmail",
             "ImpExp_EigeneImporte",
             "ImpExp_EigeneImporte_Felder",
             "ImpExp_EigeneImporte_Tabellen",
             "SchuleOAuthSecrets",
             "Logins",
+            "TextExportVorlagen",
         ]
 
         total_deleted = 0
@@ -2683,8 +2779,10 @@ def main():
                 db_anonymizer.clear_schueler_transport_fields(dry_run=args.dry_run)
                 db_anonymizer.set_schueler_modifiziert_von_admin(dry_run=args.dry_run)
                 db_anonymizer.clear_schueler_dokumentenverzeichnis(dry_run=args.dry_run)
+                db_anonymizer.clear_schueler_gsdaten(dry_run=args.dry_run)
                 db_anonymizer.delete_personengruppen_personen(dry_run=args.dry_run)
                 db_anonymizer.delete_schueler_fotos(dry_run=args.dry_run)
+                db_anonymizer.delete_schueler_foerderempfehlungen(dry_run=args.dry_run)
                 
                 # K_AllgAdresse operations
                 db_anonymizer.anonymize_k_allg_adresse(dry_run=args.dry_run)

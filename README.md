@@ -33,14 +33,16 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - SchuelerLeistungsdaten-Anonymisierung (Lernentwicklung clearing)
 - Schueler-Transportfelder-Bereinigung (setzt Idext/Fahrschueler_ID/Haltestelle_ID auf NULL)
 - Schueler-Änderungsmarker (setzt ModifiziertVon auf "Admin")
+- SchuelerGSDaten-Bereinigung (setzt Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse auf NULL)
 - Personengruppen_Personen-Löschung (vollständige Bereinigung)
 - K_AllgAdresse-Anonymisierung (allgemeine Adressen mit Namen, Adressen, Kontaktdaten)
 - SchuelerFotos-Löschung (vollständige Bereinigung)
+- SchuelerFoerderempfehlungen-Löschung (vollständige Bereinigung)
 - LehrerFotos-Löschung (vollständige Bereinigung)
 - K_Lehrer-SerNr-Anonymisierung (setzt "SerNr" auf ddddX)
 - K_Lehrer-PANr-Anonymisierung (setzt "PANr" auf PA + 7 Ziffern)
 - K_Lehrer-LBVNr-Anonymisierung (setzt "LBVNr" auf LB + 7 Ziffern)
-- Allgemeine Verwaltungs-Bereinigung (löscht Einträge aus: Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins)
+- Allgemeine Verwaltungs-Bereinigung (löscht Einträge aus: Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, TextExportVorlagen)
 
 *Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, teacher `SerNr` anonymization (sets to ddddX), teacher `PANr` anonymization (sets to PA + 7 digits), teacher `LBVNr` anonymization (sets to LB + 7 digits), complete deletion of student notes, parent/guardian data anonymization, general address anonymization with names, addresses, and contact information, and general administrative tables cleanup (deletes entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte tables, SchuleOAuthSecrets, and Logins).*
 
@@ -215,7 +217,15 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **SchuelerFotos Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
 
-**Personengruppen_Personen Tabelle:**
+**SchuelerFoerderempfehlungen Tabelle:**
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**SchuelerGSDaten Tabelle:**
+- `Anrede_Klassenlehrer` ← NULL
+- `Nachname_Klassenlehrer` ← NULL
+- `GS_Klasse` ← NULL
+
+**Personengruppen_Personen Tabelle:****
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
 
 **Allgemeine Verwaltungs-Tabellen:**
@@ -230,8 +240,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `ImpExp_EigeneImporte_Tabellen`: Alle Einträge werden gelöscht
 - `SchuleOAuthSecrets`: Alle Einträge werden gelöscht
 - `Logins`: Alle Einträge werden gelöscht
+- `TextExportVorlagen`: Alle Einträge werden gelöscht
 
-*General administrative tables: deletes all entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, and Logins.*
+*General administrative tables: deletes all entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, and TextExportVorlagen.*
 
 ```
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
