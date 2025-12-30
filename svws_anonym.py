@@ -12,6 +12,7 @@ import calendar
 import csv
 import json
 import random
+import secrets
 import sys
 from datetime import date, datetime
 from getpass import getpass
@@ -21,18 +22,23 @@ try:
     import mysql.connector
 
     MYSQL_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     MYSQL_AVAILABLE = False
+    print(f"Error: mysql-connector-python import failed: {e}", file=sys.stderr)
+    print("Install it with: pip install mysql-connector-python", file=sys.stderr)
+    sys.exit(1)
 
 try:
     from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.backends import default_backend
-    import secrets
     
     CRYPTOGRAPHY_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     CRYPTOGRAPHY_AVAILABLE = False
+    print(f"Error: cryptography library import failed: {e}", file=sys.stderr)
+    print("Install it with: pip install cryptography", file=sys.stderr)
+    sys.exit(1)
 
 
 class DatabaseConfig:
