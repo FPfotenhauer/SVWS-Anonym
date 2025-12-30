@@ -63,9 +63,25 @@ class DatabaseConfig:
         self.charset = cfg.get("charset", "utf8mb4")
         self.collation = cfg.get("collation", "utf8mb4_unicode_ci")
 
-        self.database = input("Datenbankname: ").strip()
-        self.user = input("Benutzername: ").strip()
-        self.password = getpass("Passwort: ")
+        # Use config values if they are not null, otherwise prompt
+        config_database = cfg.get("database")
+        config_username = cfg.get("username")
+        config_password = cfg.get("password")
+
+        if config_database is not None:
+            self.database = config_database
+        else:
+            self.database = input("Datenbankname: ").strip()
+        
+        if config_username is not None:
+            self.user = config_username
+        else:
+            self.user = input("Benutzername: ").strip()
+        
+        if config_password is not None:
+            self.password = config_password
+        else:
+            self.password = getpass("Passwort: ")
 
         if not self.database:
             raise ValueError("Database name is required")
