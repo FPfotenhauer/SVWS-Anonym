@@ -24,6 +24,7 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - SMTP-Konfigurations-Anonymisierung
 - Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
 - EigeneSchule_Texte-Löschung (vollständige Bereinigung)
+- SchuleCredentials-Reset (generiert neue RSA 2048-bit Schlüsselpaare und AES 256-bit Schlüssel)
 - Lernplattform-Anmeldedaten-Anonymisierung (Lehrer und Schüler)
 - Lehrerabschnittsdaten-Anonymisierung
 - Schülervermerke-Löschung (vollständige Bereinigung)
@@ -42,7 +43,7 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - K_Lehrer-SerNr-Anonymisierung (setzt "SerNr" auf ddddX)
 - K_Lehrer-PANr-Anonymisierung (setzt "PANr" auf PA + 7 Ziffern)
 - K_Lehrer-LBVNr-Anonymisierung (setzt "LBVNr" auf LB + 7 Ziffern)
-- Allgemeine Verwaltungs-Bereinigung (löscht Einträge aus: Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, TextExportVorlagen)
+- Allgemeine Verwaltungs-Bereinigung (löscht Einträge aus: Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, TextExportVorlagen; setzt Admin-Benutzer in Benutzer, BenutzerAllgemein, Credentials zurück)
 
 *Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, teacher `SerNr` anonymization (sets to ddddX), teacher `PANr` anonymization (sets to PA + 7 digits), teacher `LBVNr` anonymization (sets to LB + 7 digits), complete deletion of student notes, parent/guardian data anonymization, SchuelerGSDaten field clearing (Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse), SchuelerFoerderempfehlungen deletion, general address anonymization with names, addresses, and contact information, and general administrative tables cleanup (deletes entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte tables, SchuleOAuthSecrets, Logins, and TextExportVorlagen).*
 
@@ -51,8 +52,9 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - Python 3.6 oder höher
 - MariaDB Server (für Datenbankverbindung)
 - `mysql-connector-python` (für Datenbankoperationen): `pip install mysql-connector-python`
+- `cryptography` (für RSA/AES Schlüsselgenerierung): `pip install cryptography`
 
-*Python 3.6 or higher required. MariaDB server (for database connection). mysql-connector-python for database operations: `pip install mysql-connector-python`*
+*Python 3.6 or higher required. MariaDB server (for database connection). mysql-connector-python for database operations: `pip install mysql-connector-python`. cryptography for RSA/AES key generation: `pip install cryptography`*
 
 ## Installation
 
@@ -61,10 +63,10 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 git clone https://github.com/FPfotenhauer/SVWS-Anonym.git
 cd SVWS-Anonym
 ```
-
 2. Python-Abhängigkeiten installieren:
 ```bash
-pip install mysql-connector-python
+pip install mysql-connector-python cryptography
+``` install mysql-connector-python
 ```
 
 3. Konfigurationsdatei erstellen:
@@ -132,6 +134,13 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 **EigeneSchule_Texte Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**SchuleCredentials Tabelle:**
+- Alle Einträge werden gelöscht
+- Neuer Eintrag wird erstellt mit `Schulnummer` aus `EigeneSchule.SchulNr`
+- `RSAPublicKey`: Neu generierter RSA 2048-bit öffentlicher Schlüssel (PEM-Format)
+- `RSAPrivateKey`: Neu generierter RSA 2048-bit privater Schlüssel (PEM-Format)
+- `AES`: Neu generierter AES 256-bit Schlüssel (Base64-kodiert)
 
 **K_Lehrer Tabelle:**
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch basierend auf dem `Geschlecht` Feld)
@@ -241,8 +250,11 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `SchuleOAuthSecrets`: Alle Einträge werden gelöscht
 - `Logins`: Alle Einträge werden gelöscht
 - `TextExportVorlagen`: Alle Einträge werden gelöscht
+- `Benutzer`: Alle Einträge werden gelöscht, Admin-Benutzer wird neu angelegt (ID=1, Typ=0, Allgemein_ID=1, IstAdmin=1)
+- `BenutzerAllgemein`: Alle Einträge werden gelöscht, Administrator wird neu angelegt (ID=1, Anzeigename=Administrator, CredentialID=1)
+- `Credentials`: Alle Einträge werden gelöscht, Admin-Credential wird neu angelegt (ID=1, Benutzername=Admin)
 
-*General administrative tables: deletes all entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, and TextExportVorlagen.*
+*General administrative tables: deletes all entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, and TextExportVorlagen. Recreates admin user in Benutzer, BenutzerAllgemein, and Credentials tables.*
 
 ```
 - `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
