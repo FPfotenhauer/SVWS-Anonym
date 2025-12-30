@@ -341,6 +341,8 @@ class DatabaseAnonymizer:
             existing_email_dienst = {r["EmailDienstlich"] for r in records if r.get("EmailDienstlich")}
             existing_lidkrz = {r["LIDKrz"] for r in records if r.get("LIDKrz")}
 
+            update_cursor = self.connection.cursor() if not dry_run else None
+
             for record in records:
                 record_id = record["ID"]
                 old_vorname = record["Vorname"]
@@ -460,7 +462,6 @@ class DatabaseAnonymizer:
                         f"Ort_ID -> {new_ort_id}; Ortsteil_ID -> NULL; Strassenname -> {new_strasse}; HausNr -> {new_hausnr}; HausNrZusatz -> NULL"
                     )
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE K_Lehrer SET Vorname = %s, Nachname = %s, Kuerzel = %s, SerNr = %s, PANr = %s, LBVNr = %s, Email = %s, EmailDienstlich = %s, "
                         "Tel = %s, Handy = %s, LIDKrz = %s, Geburtsdatum = %s, IdentNr1 = %s, Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s, Titel = %s WHERE ID = %s",
@@ -487,11 +488,11 @@ class DatabaseAnonymizer:
                             record_id,
                         ),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully anonymized {updated_count} records in K_Lehrer table")
             else:
@@ -602,6 +603,8 @@ class DatabaseAnonymizer:
             existing_schul_email = {r["SchulEmail"] for r in records if r.get("SchulEmail")}
             existing_ausweis = {r["Ausweisnummer"] for r in records if r.get("Ausweisnummer")}
 
+            update_cursor = self.connection.cursor() if not dry_run else None
+
             for record in records:
                 record_id = record["ID"]
                 old_vorname = record["Vorname"]
@@ -699,7 +702,6 @@ class DatabaseAnonymizer:
                     )
                     print(f"  Geburtsort: {old_geburtsort} -> {new_geburtsort}")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE Schueler SET Vorname = %s, Name = %s, Zusatz = %s, Geburtsname = %s, Geburtsdatum = %s, Ausweisnummer = %s, Email = %s, SchulEmail = %s, "
                         "Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s, Geburtsort = %s WHERE ID = %s",
@@ -721,11 +723,11 @@ class DatabaseAnonymizer:
                             record_id,
                         ),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully anonymized {updated_count} records in Schueler table")
             else:
@@ -768,6 +770,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - EigeneSchule changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 
@@ -790,16 +794,15 @@ class DatabaseAnonymizer:
                 if dry_run:
                     print(f"  ID {record_id}: Would update SchulNr=123456, SchultraegerNr=NULL, Bezeichnung1-3, Strassenname, HausNr, HausNrZusatz, PLZ, Ort, Telefon, Fax, Email, WebAdresse")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE EigeneSchule SET SchulNr = %s, SchultraegerNr = %s, Bezeichnung1 = %s, Bezeichnung2 = %s, Bezeichnung3 = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s, PLZ = %s, Ort = %s, Telefon = %s, Fax = %s, Email = %s, WebAdresse = %s WHERE ID = %s",
                         (new_schulnr, new_schultraegernr, new_bezeichnung1, new_bezeichnung2, new_bezeichnung3, new_strassenname, new_hausnr, new_hausnrzusatz, new_plz, new_ort, new_telefon, new_fax, new_email, new_webadresse, record_id)
                     )
-                    update_cursor.close()
                 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully anonymized {updated_count} records in EigeneSchule table")
             else:
@@ -842,6 +845,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - EigeneSchule_Email changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 
@@ -856,16 +861,15 @@ class DatabaseAnonymizer:
                 if dry_run:
                     print(f"  ID {record_id}: Would set Domain=NULL, SMTPServer=NULL, SMTPPort=25, SMTPStartTLS=1, SMTPUseTLS=0, SMTPTrustTLSHost=NULL")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE EigeneSchule_Email SET Domain = %s, SMTPServer = %s, SMTPPort = %s, SMTPStartTLS = %s, SMTPUseTLS = %s, SMTPTrustTLSHost = %s WHERE ID = %s",
                         (new_domain, new_smtpserver, new_smtpport, new_smtpstarttls, new_smtpusetls, new_smtptrusttlshost, record_id)
                     )
-                    update_cursor.close()
                 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully anonymized {updated_count} records in EigeneSchule_Email table")
             else:
@@ -967,6 +971,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - EigeneSchule_Abteilungen changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 
@@ -978,16 +984,15 @@ class DatabaseAnonymizer:
                 if dry_run:
                     print(f"  ID {record_id}: Would set Email='{new_email}', Durchwahl=NULL, Raum=NULL")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE EigeneSchule_Abteilungen SET Email = %s, Durchwahl = %s, Raum = %s WHERE ID = %s",
                         (new_email, new_durchwahl, new_raum, record_id)
                     )
-                    update_cursor.close()
                 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully anonymized {updated_count} records in EigeneSchule_Abteilungen table")
             else:
@@ -1049,6 +1054,8 @@ class DatabaseAnonymizer:
             cursor.execute("SELECT Benutzername FROM CredentialsLernplattformen")
             existing_usernames = {row['Benutzername'] for row in cursor.fetchall()}
 
+            update_cursor = self.connection.cursor() if not dry_run else None
+
             for record in records:
                 credential_id = record.get("credential_id")
                 old_username = record.get("old_username")
@@ -1074,16 +1081,15 @@ class DatabaseAnonymizer:
                 if dry_run:
                     print(f"  Credential ID {credential_id}: {old_username} -> {new_username}, Initialkennwort -> {new_initialkennwort}, PashwordHash/RSA/AES -> NULL")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE CredentialsLernplattformen SET Benutzername = %s, Initialkennwort = %s, PashwordHash = %s, RSAPublicKey = %s, RSAPrivateKey = %s, AES = %s WHERE ID = %s",
                         (new_username, new_initialkennwort, None, None, None, None, credential_id)
                     )
-                    update_cursor.close()
                 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully updated {updated_count} records in CredentialsLernplattformen table")
             else:
@@ -1146,6 +1152,8 @@ class DatabaseAnonymizer:
             cursor.execute("SELECT Benutzername FROM CredentialsLernplattformen")
             existing_usernames = {row['Benutzername'] for row in cursor.fetchall()}
             
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 credential_id = record.get("credential_id")
                 old_username = record.get("old_username")
@@ -1173,16 +1181,15 @@ class DatabaseAnonymizer:
                 if dry_run:
                     print(f"  Credential ID {credential_id}: {old_username} -> {new_username}, Initialkennwort -> {new_initialkennwort}, PashwordHash/RSA/AES -> NULL")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE CredentialsLernplattformen SET Benutzername = %s, Initialkennwort = %s, PashwordHash = %s, RSAPublicKey = %s, RSAPrivateKey = %s, AES = %s WHERE ID = %s",
                         (new_username, new_initialkennwort, None, None, None, None, credential_id)
                     )
-                    update_cursor.close()
                 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully updated {updated_count} student records in CredentialsLernplattformen table")
             else:
@@ -1225,6 +1232,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - Lernplattformen changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_bezeichnung = record.get("Bezeichnung")
@@ -1238,16 +1247,15 @@ class DatabaseAnonymizer:
                 if dry_run:
                     print(f"  ID {record_id}: Bezeichnung: '{old_bezeichnung}' -> '{new_bezeichnung}', Konfiguration: {'NULL' if new_konfiguration is None else 'unchanged'}")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE Lernplattformen SET Bezeichnung = %s, Konfiguration = %s WHERE ID = %s",
                         (new_bezeichnung, new_konfiguration, record_id)
                     )
-                    update_cursor.close()
                 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully anonymized {updated_count} records in Lernplattformen table")
             else:
@@ -1302,6 +1310,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - SchuelerErzAdr changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_name1 = record.get("Name1")
@@ -1317,16 +1327,15 @@ class DatabaseAnonymizer:
                         f"Name2 {old_name2} -> {new_name2}"
                     )
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE SchuelerErzAdr SET Name1 = %s, Name2 = %s WHERE ID = %s",
                         (new_name1, new_name2, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully updated {updated_count} records in SchuelerErzAdr table")
             else:
@@ -1393,6 +1402,8 @@ class DatabaseAnonymizer:
                 return self.anonymizer.anonymize_firstname(old_firstname, gender=None)
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_vn1 = record.get("Vorname1")
@@ -1411,16 +1422,15 @@ class DatabaseAnonymizer:
                         f"Vorname2 {old_vn2} -> {new_vn2}"
                     )
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE SchuelerErzAdr SET Vorname1 = %s, Vorname2 = %s WHERE ID = %s",
                         (new_vn1, new_vn2, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully updated {updated_count} records in SchuelerErzAdr table (Vornamen)")
             else:
@@ -1474,6 +1484,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - SchuelerErzAdr address changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_ort = record.get("ErzOrt_ID")
@@ -1495,7 +1507,6 @@ class DatabaseAnonymizer:
                         f"ErzHausNr {old_hausnr} -> {new_hausnr}"
                     )
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         """
                         UPDATE SchuelerErzAdr
@@ -1507,11 +1518,11 @@ class DatabaseAnonymizer:
                         """,
                         (new_ort, new_ortsteil, new_strasse, new_hausnr, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully updated {updated_count} records in SchuelerErzAdr table (address)")
             else:
@@ -1559,6 +1570,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - SchuelerErzAdr email changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 name1 = record.get("Name1")
@@ -1573,16 +1586,15 @@ class DatabaseAnonymizer:
                 if dry_run:
                     print(f"  ID {record_id}: ErzEmail {old_email} -> {new_email}")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE SchuelerErzAdr SET ErzEmail = %s WHERE ID = %s",
                         (new_email, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully updated {updated_count} records in SchuelerErzAdr table (ErzEmail)")
             else:
@@ -1624,6 +1636,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - SchuelerErzAdr misc clear:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_email2 = record.get("ErzEmail2")
@@ -1643,7 +1657,6 @@ class DatabaseAnonymizer:
                         f"ErzAdrZusatz {old_adr_zusatz} -> {new_adr_zusatz}"
                     )
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         """
                         UPDATE SchuelerErzAdr
@@ -1655,11 +1668,11 @@ class DatabaseAnonymizer:
                         """,
                         (new_email2, new_staat1, new_staat2, new_adr_zusatz, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully cleared misc fields for {updated_count} records in SchuelerErzAdr")
             else:
@@ -1699,6 +1712,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - SchuelerErzAdr Bemerkungen clear:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_bem = record.get("Bemerkungen")
@@ -1708,16 +1723,15 @@ class DatabaseAnonymizer:
                 if dry_run:
                     print(f"  ID {record_id}: Bemerkungen present -> set to NULL")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE SchuelerErzAdr SET Bemerkungen = %s WHERE ID = %s",
                         (new_bem, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully cleared Bemerkungen for {updated_count} records in SchuelerErzAdr")
             else:
@@ -1830,6 +1844,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - K_AllgAdresse changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_name1 = record.get("AllgAdrName1")
@@ -1885,7 +1901,6 @@ class DatabaseAnonymizer:
                           f"AllgAdrZusatz1 {old_zusatz1} -> NULL, "
                           f"AllgAdrZusatz2 {old_zusatz2} -> NULL")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE K_AllgAdresse SET AllgAdrName1 = %s, AllgAdrName2 = NULL, "
                         "AllgAdrHausNrZusatz = NULL, AllgOrtsteil_ID = NULL, "
@@ -1895,11 +1910,11 @@ class DatabaseAnonymizer:
                         "AllgAdrZusatz2 = NULL WHERE ID = %s",
                         (new_name1, new_strassenname, new_hausnr, new_ort_id, new_telefon1, new_email, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully anonymized {updated_count} records in K_AllgAdresse table")
             else:
@@ -1943,6 +1958,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - LehrerAbschnittsdaten changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_stammschulnr = record.get("StammschulNr")
@@ -1951,16 +1968,15 @@ class DatabaseAnonymizer:
                 if dry_run:
                     print(f"  ID {record_id}: StammschulNr {old_stammschulnr} -> {new_stammschulnr}")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE LehrerAbschnittsdaten SET StammschulNr = %s WHERE ID = %s",
                         (new_stammschulnr, record_id)
                     )
-                    update_cursor.close()
                 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully updated {updated_count} records in LehrerAbschnittsdaten table")
             else:
@@ -2062,6 +2078,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - AllgAdrAnsprechpartner changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_name = record.get("Name")
@@ -2089,17 +2107,16 @@ class DatabaseAnonymizer:
                           f"Titel {old_titel} -> NULL, "
                           f"Telefon {old_telefon} -> {new_telefon}")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE AllgAdrAnsprechpartner SET Name = %s, Vorname = %s, "
                         "Email = %s, Titel = NULL, Telefon = %s WHERE ID = %s",
                         (new_name, new_vorname, new_email, new_telefon, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully anonymized {updated_count} records in AllgAdrAnsprechpartner table")
             else:
@@ -2143,6 +2160,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - SchuelerTelefone changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_telefon = record.get("Telefonnummer")
@@ -2156,16 +2175,15 @@ class DatabaseAnonymizer:
                     print(f"  ID {record_id}: Telefonnummer {old_telefon} -> {new_telefon}, "
                           f"Bemerkung {old_bemerkung} -> NULL")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE SchuelerTelefone SET Telefonnummer = %s, Bemerkung = %s WHERE ID = %s",
                         (new_telefon, new_bemerkung, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully anonymized {updated_count} records in SchuelerTelefone table")
             else:
@@ -2209,22 +2227,23 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - SchuelerLeistungsdaten field clearing:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
 
                 if dry_run:
                     print(f"  ID {record_id}: Lernentw -> NULL")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE SchuelerLeistungsdaten SET Lernentw = NULL WHERE ID = %s",
                         (record_id,),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully cleared Lernentw for {updated_count} records in SchuelerLeistungsdaten table")
             else:
@@ -2268,23 +2287,24 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - SchuelerLD_PSFachBem field clearing:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
 
                 if dry_run:
                     print(f"  ID {record_id}: ASV, LELS, AUE, ESF, BemerkungFSP, BemerkungVersetzung -> NULL")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE SchuelerLD_PSFachBem SET ASV = NULL, LELS = NULL, AUE = NULL, ESF = NULL, "
                         "BemerkungFSP = NULL, BemerkungVersetzung = NULL WHERE ID = %s",
                         (record_id,),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully cleared fields for {updated_count} records in SchuelerLD_PSFachBem table")
             else:
@@ -2328,6 +2348,8 @@ class DatabaseAnonymizer:
                 print("\nDRY RUN - Schueler transport fields changes:")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_idext = record.get("Idext")
@@ -2343,16 +2365,15 @@ class DatabaseAnonymizer:
                         f"  ID {record_id}: Idext {old_idext} -> NULL, Fahrschueler_ID {old_fahr} -> NULL, Haltestelle_ID {old_halt} -> NULL"
                     )
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE Schueler SET Idext = %s, Fahrschueler_ID = %s, Haltestelle_ID = %s WHERE ID = %s",
                         (new_idext, new_fahr, new_halt, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(
                     f"\nSuccessfully cleared transport fields for {updated_count} records in Schueler table"
@@ -2399,6 +2420,8 @@ class DatabaseAnonymizer:
             print(f"\nFound {len(records)} records in Schueler table for ModifiziertVon update")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_val = record.get("ModifiziertVon")
@@ -2408,16 +2431,15 @@ class DatabaseAnonymizer:
                     # Report intended change
                     print(f"  ID {record_id}: ModifiziertVon {old_val} -> {new_val}")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE Schueler SET ModifiziertVon = %s WHERE ID = %s",
                         (new_val, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(f"\nSuccessfully set ModifiziertVon='Admin' for {updated_count} records in Schueler table")
             else:
@@ -2462,6 +2484,8 @@ class DatabaseAnonymizer:
             print(f"\nFound {len(records)} records in Schueler table for Dokumentenverzeichnis clear")
 
             updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
             for record in records:
                 record_id = record.get("ID")
                 old_val = record.get("Dokumentenverzeichnis")
@@ -2470,16 +2494,15 @@ class DatabaseAnonymizer:
                 if dry_run:
                     print(f"  ID {record_id}: Dokumentenverzeichnis {old_val} -> NULL")
                 else:
-                    update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE Schueler SET Dokumentenverzeichnis = %s WHERE ID = %s",
                         (new_val, record_id),
                     )
-                    update_cursor.close()
 
                 updated_count += 1
 
             if not dry_run:
+                update_cursor.close()
                 self.connection.commit()
                 print(
                     f"\nSuccessfully cleared Dokumentenverzeichnis for {updated_count} records in Schueler table"
@@ -2582,7 +2605,7 @@ class DatabaseAnonymizer:
                 update_cursor.close()
                 self.connection.commit()
                 print(
-                    f"\nSuccessfully cleared Bemerkung for {record_count} records in SchuelerKAoADaten table"
+                    f"\\nSuccessfully cleared Bemerkung for {record_count} records in SchuelerKAoADaten table"
                 )
 
             return record_count
@@ -2606,7 +2629,7 @@ class DatabaseAnonymizer:
             # Check if table exists
             cursor.execute("SHOW TABLES LIKE 'SchuelerLernabschnittsdaten'")
             if not cursor.fetchone():
-                print("\nSkipping SchuelerLernabschnittsdaten clear: table not found")
+                print("\\nSkipping SchuelerLernabschnittsdaten clear: table not found")
                 return 0
 
             # Count records
@@ -2632,6 +2655,55 @@ class DatabaseAnonymizer:
                 self.connection.commit()
                 print(
                     f"\nSuccessfully cleared fields for {record_count} records in SchuelerLernabschnittsdaten table"
+                )
+
+            return record_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def update_schueler_liste_erzeuger(self, dry_run=False):
+        """Set SchuelerListe.Erzeuger to 1 where not NULL."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'SchuelerListe'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuelerListe: table not found")
+                return 0
+
+            # Count records where Erzeuger IS NOT NULL
+            cursor.execute("SELECT COUNT(*) as count FROM SchuelerListe WHERE Erzeuger IS NOT NULL")
+            result = cursor.fetchone()
+            record_count = result.get("count", 0) if result else 0
+
+            if record_count == 0:
+                print("\nNo records found in SchuelerListe table with non-NULL Erzeuger")
+                return 0
+
+            print(f"\nFound {record_count} records in SchuelerListe table with non-NULL Erzeuger")
+
+            if dry_run:
+                print("\nDRY RUN - SchuelerListe Erzeuger update:")
+                print(f"  Would set Erzeuger to 1 for {record_count} records")
+            else:
+                update_cursor = self.connection.cursor()
+                update_cursor.execute(
+                    "UPDATE SchuelerListe SET Erzeuger = 1 WHERE Erzeuger IS NOT NULL"
+                )
+                update_cursor.close()
+                self.connection.commit()
+                print(
+                    f"\nSuccessfully updated Erzeuger to 1 for {record_count} records in SchuelerListe table"
                 )
 
             return record_count
@@ -3215,6 +3287,9 @@ def main():
                 
                 # AllgAdrAnsprechpartner operations
                 db_anonymizer.anonymize_allg_adr_ansprechpartner(dry_run=args.dry_run)
+
+                # SchuelerListe operations
+                db_anonymizer.update_schueler_liste_erzeuger(dry_run=args.dry_run)
 
                 # General admin tables cleanup
                 db_anonymizer.delete_general_admin_tables(dry_run=args.dry_run)
