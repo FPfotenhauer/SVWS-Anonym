@@ -924,6 +924,69 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_eigene_schule_abteilungen(self, dry_run=False):
+        """Anonymize EigeneSchule_Abteilungen table - set Email and clear Durchwahl and Raum."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'EigeneSchule_Abteilungen'")
+            if not cursor.fetchone():
+                print("\nSkipping EigeneSchule_Abteilungen update: table not found")
+                return 0
+
+            cursor.execute("SELECT * FROM EigeneSchule_Abteilungen")
+            records = cursor.fetchall()
+            
+            if not records:
+                print("\nNo records found in EigeneSchule_Abteilungen table")
+                return 0
+
+            print(f"\nFound {len(records)} records in EigeneSchule_Abteilungen table")
+            
+            if dry_run:
+                print("\nDRY RUN - EigeneSchule_Abteilungen changes:")
+
+            updated_count = 0
+            for record in records:
+                record_id = record.get("ID")
+                
+                # Set specific values
+                new_email = "abteilung@schule.example.com"
+                new_durchwahl = None
+                new_raum = None
+                
+                if dry_run:
+                    print(f"  ID {record_id}: Would set Email='{new_email}', Durchwahl=NULL, Raum=NULL")
+                else:
+                    update_cursor = self.connection.cursor()
+                    update_cursor.execute(
+                        "UPDATE EigeneSchule_Abteilungen SET Email = %s, Durchwahl = %s, Raum = %s WHERE ID = %s",
+                        (new_email, new_durchwahl, new_raum, record_id)
+                    )
+                    update_cursor.close()
+                
+                updated_count += 1
+
+            if not dry_run:
+                self.connection.commit()
+                print(f"\nSuccessfully anonymized {updated_count} records in EigeneSchule_Abteilungen table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def anonymize_credentials_lernplattformen(self, dry_run=False):
         """Update CredentialsLernplattformen usernames based on K_Lehrer names via LehrerLernplattform."""
         if not self.connection:
@@ -2925,6 +2988,7 @@ def main():
                 db_anonymizer.anonymize_eigene_schule(dry_run=args.dry_run)
                 db_anonymizer.anonymize_eigene_schule_email(dry_run=args.dry_run)
                 db_anonymizer.anonymize_eigene_schule_teilstandorte(dry_run=args.dry_run)
+                db_anonymizer.anonymize_eigene_schule_abteilungen(dry_run=args.dry_run)
                 db_anonymizer.anonymize_eigene_schule_logo(dry_run=args.dry_run)
                 db_anonymizer.delete_eigene_schule_texte(dry_run=args.dry_run)
                 db_anonymizer.reset_schule_credentials(dry_run=args.dry_run)
