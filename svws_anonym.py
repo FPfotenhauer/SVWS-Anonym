@@ -310,7 +310,7 @@ class DatabaseAnonymizer:
             ort_name_by_id = {r["ID"]: r[ort_name_key] for r in ort_records}
 
             cursor.execute(
-                "SELECT ID, Vorname, Nachname, Geschlecht, Kuerzel, Email, EmailDienstlich, Tel, Handy, LIDKrz, Geburtsdatum, SerNr, PANr, LBVNr FROM K_Lehrer"
+                "SELECT ID, Vorname, Nachname, Geschlecht, Kuerzel, Email, EmailDienstlich, Tel, Handy, LIDKrz, Geburtsdatum, SerNr, PANr, LBVNr, Titel FROM K_Lehrer"
             )
             records = cursor.fetchall()
 
@@ -340,8 +340,11 @@ class DatabaseAnonymizer:
                 old_panr = record.get("PANr")
                 old_lbvnr = record.get("LBVNr")
                 old_geburtsdatum = record.get("Geburtsdatum")
+                old_titel = record.get("Titel")
 
                 gender = self.anonymizer.get_gender_from_geschlecht(geschlecht)
+
+                new_titel = None
 
                 new_vorname, new_nachname = self.anonymizer.anonymize_fullname(
                     old_vorname, old_nachname, gender
@@ -444,12 +447,12 @@ class DatabaseAnonymizer:
                     update_cursor = self.connection.cursor()
                     update_cursor.execute(
                         "UPDATE K_Lehrer SET Vorname = %s, Nachname = %s, Kuerzel = %s, SerNr = %s, PANr = %s, LBVNr = %s, Email = %s, EmailDienstlich = %s, "
-                        "Tel = %s, Handy = %s, LIDKrz = %s, Geburtsdatum = %s, IdentNr1 = %s, Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s WHERE ID = %s",
+                        "Tel = %s, Handy = %s, LIDKrz = %s, Geburtsdatum = %s, IdentNr1 = %s, Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s, Titel = %s WHERE ID = %s",
                         (
                             new_vorname,
                             new_nachname,
                             new_kuerzel,
-                                new_sernr,
+                            new_sernr,
                             new_panr,
                             new_lbvnr,
                             new_email,
@@ -464,6 +467,7 @@ class DatabaseAnonymizer:
                             new_strasse,
                             new_hausnr,
                             new_hausnr_zusatz,
+                            new_titel,
                             record_id,
                         ),
                     )
