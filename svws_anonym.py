@@ -1052,13 +1052,16 @@ class DatabaseAnonymizer:
                     existing_usernames.remove(old_username)
                 existing_usernames.add(new_username)
                 
+                # Generate random 8-digit password
+                new_initialkennwort = ''.join([str(random.randint(0, 9)) for _ in range(8)])
+                
                 if dry_run:
-                    print(f"  Credential ID {credential_id}: {old_username} -> {new_username}")
+                    print(f"  Credential ID {credential_id}: {old_username} -> {new_username}, Initialkennwort -> {new_initialkennwort}, PashwordHash/RSA/AES -> NULL")
                 else:
                     update_cursor = self.connection.cursor()
                     update_cursor.execute(
-                        "UPDATE CredentialsLernplattformen SET Benutzername = %s WHERE ID = %s",
-                        (new_username, credential_id)
+                        "UPDATE CredentialsLernplattformen SET Benutzername = %s, Initialkennwort = %s, PashwordHash = %s, RSAPublicKey = %s, RSAPrivateKey = %s, AES = %s WHERE ID = %s",
+                        (new_username, new_initialkennwort, None, None, None, None, credential_id)
                     )
                     update_cursor.close()
                 
@@ -1148,13 +1151,16 @@ class DatabaseAnonymizer:
                     existing_usernames.remove(old_username)
                 existing_usernames.add(new_username)
                 
+                # Generate random 8-digit password
+                new_initialkennwort = ''.join([str(random.randint(0, 9)) for _ in range(8)])
+                
                 if dry_run:
-                    print(f"  Credential ID {credential_id}: {old_username} -> {new_username}")
+                    print(f"  Credential ID {credential_id}: {old_username} -> {new_username}, Initialkennwort -> {new_initialkennwort}, PashwordHash/RSA/AES -> NULL")
                 else:
                     update_cursor = self.connection.cursor()
                     update_cursor.execute(
-                        "UPDATE CredentialsLernplattformen SET Benutzername = %s WHERE ID = %s",
-                        (new_username, credential_id)
+                        "UPDATE CredentialsLernplattformen SET Benutzername = %s, Initialkennwort = %s, PashwordHash = %s, RSAPublicKey = %s, RSAPrivateKey = %s, AES = %s WHERE ID = %s",
+                        (new_username, new_initialkennwort, None, None, None, None, credential_id)
                     )
                     update_cursor.close()
                 
@@ -1165,6 +1171,71 @@ class DatabaseAnonymizer:
                 print(f"\nSuccessfully updated {updated_count} student records in CredentialsLernplattformen table")
             else:
                 print(f"\nDry run complete. {updated_count} student records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def anonymize_lernplattformen(self, dry_run=False):
+        """Anonymize Lernplattformen table - set Bezeichnung to 'Lernplattform' + ID and clear Konfiguration."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'Lernplattformen'")
+            if not cursor.fetchone():
+                print("\nSkipping Lernplattformen update: table not found")
+                return 0
+
+            cursor.execute("SELECT ID, Bezeichnung, Konfiguration FROM Lernplattformen")
+            records = cursor.fetchall()
+            
+            if not records:
+                print("\nNo records found in Lernplattformen table")
+                return 0
+
+            print(f"\nFound {len(records)} records in Lernplattformen table")
+            
+            if dry_run:
+                print("\nDRY RUN - Lernplattformen changes:")
+
+            updated_count = 0
+            for record in records:
+                record_id = record.get("ID")
+                old_bezeichnung = record.get("Bezeichnung")
+                old_konfiguration = record.get("Konfiguration")
+                
+                # Set Bezeichnung to 'Lernplattform' + ID
+                new_bezeichnung = f"Lernplattform{record_id}"
+                # Set Konfiguration to NULL if not NULL
+                new_konfiguration = None if old_konfiguration is not None else old_konfiguration
+                
+                if dry_run:
+                    print(f"  ID {record_id}: Bezeichnung: '{old_bezeichnung}' -> '{new_bezeichnung}', Konfiguration: {'NULL' if new_konfiguration is None else 'unchanged'}")
+                else:
+                    update_cursor = self.connection.cursor()
+                    update_cursor.execute(
+                        "UPDATE Lernplattformen SET Bezeichnung = %s, Konfiguration = %s WHERE ID = %s",
+                        (new_bezeichnung, new_konfiguration, record_id)
+                    )
+                    update_cursor.close()
+                
+                updated_count += 1
+
+            if not dry_run:
+                self.connection.commit()
+                print(f"\nSuccessfully anonymized {updated_count} records in Lernplattformen table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
 
             return updated_count
 
@@ -2998,6 +3069,9 @@ def main():
                 db_anonymizer.anonymize_credentials_lernplattformen(dry_run=args.dry_run)
                 db_anonymizer.anonymize_lehrer_abschnittsdaten(dry_run=args.dry_run)
                 db_anonymizer.delete_lehrer_fotos(dry_run=args.dry_run)
+                
+                # Lernplattformen operations
+                db_anonymizer.anonymize_lernplattformen(dry_run=args.dry_run)
                 
                 # Schueler (student) operations
                 db_anonymizer.anonymize_schueler(dry_run=args.dry_run)
