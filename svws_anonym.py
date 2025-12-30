@@ -2498,7 +2498,7 @@ class DatabaseAnonymizer:
             cursor.close()
 
     def clear_schueler_gsdaten(self, dry_run=False):
-        """Set SchuelerGSDaten.Anrede_Klassenlehrer, Nachname_Klassenlehrer, and GS_Klasse to NULL for all rows."""
+        """Set SchuelerGSDaten.Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse, and Bemerkungen to NULL for all rows."""
         if not self.connection:
             raise RuntimeError("Database connection is not established")
 
@@ -2524,16 +2524,65 @@ class DatabaseAnonymizer:
 
             if dry_run:
                 print("\nDRY RUN - SchuelerGSDaten field clearing:")
-                print(f"  Would set Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse to NULL for {record_count} records")
+                print(f"  Would set Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse, Bemerkungen to NULL for {record_count} records")
             else:
                 update_cursor = self.connection.cursor()
                 update_cursor.execute(
-                    "UPDATE SchuelerGSDaten SET Anrede_Klassenlehrer = NULL, Nachname_Klassenlehrer = NULL, GS_Klasse = NULL"
+                    "UPDATE SchuelerGSDaten SET Anrede_Klassenlehrer = NULL, Nachname_Klassenlehrer = NULL, GS_Klasse = NULL, Bemerkungen = NULL"
                 )
                 update_cursor.close()
                 self.connection.commit()
                 print(
                     f"\nSuccessfully cleared fields for {record_count} records in SchuelerGSDaten table"
+                )
+
+            return record_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def clear_schueler_kaoa_daten(self, dry_run=False):
+        """Set SchuelerKAoADaten.Bemerkung to NULL for all rows."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'SchuelerKAoADaten'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuelerKAoADaten clear: table not found")
+                return 0
+
+            # Count records
+            cursor.execute("SELECT COUNT(*) as count FROM SchuelerKAoADaten")
+            result = cursor.fetchone()
+            record_count = result.get("count", 0) if result else 0
+
+            if record_count == 0:
+                print("\nNo records found in SchuelerKAoADaten table for clearing")
+                return 0
+
+            print(f"\nFound {record_count} records in SchuelerKAoADaten table for field clearing")
+
+            if dry_run:
+                print("\nDRY RUN - SchuelerKAoADaten field clearing:")
+                print(f"  Would set Bemerkung to NULL for {record_count} records")
+            else:
+                update_cursor = self.connection.cursor()
+                update_cursor.execute(
+                    "UPDATE SchuelerKAoADaten SET Bemerkung = NULL"
+                )
+                update_cursor.close()
+                self.connection.commit()
+                print(
+                    f"\nSuccessfully cleared Bemerkung for {record_count} records in SchuelerKAoADaten table"
                 )
 
             return record_count
@@ -3106,6 +3155,7 @@ def main():
                 db_anonymizer.set_schueler_modifiziert_von_admin(dry_run=args.dry_run)
                 db_anonymizer.clear_schueler_dokumentenverzeichnis(dry_run=args.dry_run)
                 db_anonymizer.clear_schueler_gsdaten(dry_run=args.dry_run)
+                db_anonymizer.clear_schueler_kaoa_daten(dry_run=args.dry_run)
                 db_anonymizer.delete_personengruppen_personen(dry_run=args.dry_run)
                 db_anonymizer.delete_schueler_fotos(dry_run=args.dry_run)
                 db_anonymizer.delete_schueler_foerderempfehlungen(dry_run=args.dry_run)

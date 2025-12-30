@@ -21,11 +21,13 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - Adressdaten-Integration aus CSV-Dateien
 - Schulinformations-Anonymisierung mit spezifischen Werten
 - Teilstandort-Anonymisierung (setzt einen Hauptstandort-Eintrag)
+- Abteilungs-Anonymisierung (EigeneSchule_Abteilungen Email/Durchwahl/Raum)
 - SMTP-Konfigurations-Anonymisierung
 - Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
 - EigeneSchule_Texte-Löschung (vollständige Bereinigung)
 - SchuleCredentials-Reset (generiert neue RSA 2048-bit Schlüsselpaare und AES 256-bit Schlüssel)
-- Lernplattform-Anmeldedaten-Anonymisierung (Lehrer und Schüler)
+- Lernplattformen-Anonymisierung (Bezeichnung und Konfiguration)
+- Lernplattform-Anmeldedaten-Anonymisierung (Lehrer und Schüler mit Initialkennwort und Sicherheitsfeld-Bereinigung)
 - Lehrerabschnittsdaten-Anonymisierung
 - Schülervermerke-Löschung (vollständige Bereinigung)
 - SchuelerErzAdr-Anonymisierung (Eltern-/Erzieherdaten)
@@ -81,14 +83,18 @@ cp config.example.json config.json
   "database": {
     "host": "localhost",
     "port": 3306,
-    "charset": "utf8mb4"
+    "database": null,
+    "username": null,
+    "password": null,
+    "charset": "utf8mb4",
+    "collation": "utf8mb4_unicode_ci"
   }
 }
 ```
 
-**Hinweis:** Datenbankname, Benutzername und Passwort werden beim Programmstart abgefragt und nicht in der Konfigurationsdatei gespeichert.
+**Hinweis:** Wenn `database`, `username` und `password` auf `null` gesetzt sind (oder fehlen), werden diese Werte beim Programmstart interaktiv abgefragt. Sie können diese Werte auch direkt in der Konfigurationsdatei setzen für automatisierte Ausführung ohne Eingabeaufforderungen.
 
-*Note: Database name, username and password are prompted at program startup and not stored in the configuration file.*
+*Note: If `database`, `username` and `password` are set to `null` (or omitted), these values are prompted interactively at program startup. You can also set these values directly in the configuration file for automated execution without prompts.*
 
 4. Das Skript ausführbar machen (optional):
 ```bash
@@ -130,6 +136,11 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **EigeneSchule_Teilstandorte Tabelle:**
 - Alle vorhandenen Einträge werden gelöscht und ein Eintrag wird gesetzt mit: `AdrMerkmal=A`, `PLZ=42103`, `Ort=Wuppertal`, `Strassenname=Hauptstrasse`, `HausNr=56`, `HausNrZusatz=NULL`, `Bemerkung=Hauptstandort`, `Kuerzel=WtalA`
 
+**EigeneSchule_Abteilungen Tabelle:**
+- `Email` wird auf "abteilung@schule.example.com" gesetzt
+- `Durchwahl` wird auf NULL gesetzt
+- `Raum` wird auf NULL gesetzt
+
 **EigeneSchule_Logo Tabelle:**
 - Logo wird durch ein standardisiertes Base64-kodiertes Bild ersetzt
 
@@ -160,17 +171,31 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 **CredentialsLernplattformen Tabelle (Lehrer):**
 - `Benutzername` wird auf Format "Vorname.Nachname" gesetzt (basierend auf K_Lehrer Namen via LehrerLernplattform)
- - Duplikate werden mit numerischen Suffixen behandelt (Name, Name1, Name2, etc.)
+- Duplikate werden mit numerischen Suffixen behandelt (Name, Name1, Name2, etc.)
+- `Initialkennwort` wird auf eine zufällige 8-stellige Ziffernfolge gesetzt
+- `PashwordHash` wird auf NULL gesetzt
+- `RSAPublicKey` wird auf NULL gesetzt
+- `RSAPrivateKey` wird auf NULL gesetzt
+- `AES` wird auf NULL gesetzt
 
 **CredentialsLernplattformen Tabelle (Schüler):**
 - `Benutzername` wird auf Format "Vorname.Name" gesetzt (basierend auf Schueler Namen via SchuelerLernplattform)
 - Duplikate werden mit numerischen Suffixen behandelt (Name, Name1, Name2, etc.)
+- `Initialkennwort` wird auf eine zufällige 8-stellige Ziffernfolge gesetzt
+- `PashwordHash` wird auf NULL gesetzt
+- `RSAPublicKey` wird auf NULL gesetzt
+- `RSAPrivateKey` wird auf NULL gesetzt
+- `AES` wird auf NULL gesetzt
 
 **LehrerAbschnittsdaten Tabelle:**
 - `StammschulNr` wird auf "123456" gesetzt
 
 **LehrerFotos Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**Lernplattformen Tabelle:**
+- `Bezeichnung` wird auf "Lernplattform" + ID gesetzt (z.B. "Lernplattform1")
+- `Konfiguration` wird auf NULL gesetzt (wenn nicht bereits NULL)
 
 **SchuelerVermerke Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
@@ -324,13 +349,17 @@ Die `config.json` enthält die Datenbankverbindungsparameter für den MariaDB-Se
 
 - `host`: Hostname oder IP-Adresse des Datenbankservers (Standard: localhost)
 - `port`: Port des Datenbankservers (Standard: 3306)
+- `database`: Datenbankname (optional, wird bei NULL abgefragt)
+- `username`: Benutzername (optional, wird bei NULL abgefragt)
+- `password`: Passwort (optional, wird bei NULL abgefragt)
 - `charset`: Zeichensatz (Standard: utf8mb4)
+- `collation`: Kollation (Standard: utf8mb4_unicode_ci)
 
-**Datenbankname, Benutzername und Passwort** werden beim Programmstart interaktiv abgefragt und nicht in der Konfigurationsdatei gespeichert. Dies erhöht die Sicherheit, da keine Zugangsdaten im Klartext gespeichert werden.
+**Flexible Authentifizierung:** Wenn `database`, `username` und `password` auf `null` gesetzt sind (oder fehlen), werden diese Werte beim Programmstart interaktiv abgefragt. Dies erhöht die Sicherheit, da keine Zugangsdaten im Klartext gespeichert werden müssen. Alternativ können diese Werte auch direkt in der Konfigurationsdatei gesetzt werden für automatisierte Ausführung ohne Eingabeaufforderungen.
 
 **Wichtig:** Die `config.json` wird nicht ins Git-Repository eingecheckt. Verwenden Sie `config.example.json` als Vorlage.
 
-*The `config.json` file contains database connection parameters for the MariaDB server. Database name, username and password are prompted interactively at program startup and not stored in the configuration file. This improves security by not storing credentials in plain text. Important: `config.json` is not checked into the git repository. Use `config.example.json` as a template.*
+*The `config.json` file contains database connection parameters for the MariaDB server. Flexible authentication: If `database`, `username` and `password` are set to `null` (or omitted), these values are prompted interactively at program startup. This improves security by not requiring credentials to be stored in plain text. Alternatively, these values can also be set directly in the configuration file for automated execution without prompts. Important: `config.json` is not checked into the git repository. Use `config.example.json` as a template.*
 
 ## Namenslisten (Name Lists)
 
