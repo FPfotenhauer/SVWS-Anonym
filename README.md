@@ -37,6 +37,11 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - Schueler-Transportfelder-Bereinigung (setzt Idext/Fahrschueler_ID/Haltestelle_ID auf NULL)
 - Schueler-Änderungsmarker (setzt ModifiziertVon auf "Admin")
 - SchuelerGSDaten-Bereinigung (setzt Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse auf NULL)
+- Schueler LSSchulNr-Aktualisierung (Bereich 100000-199999 mit SchulformKrz-Matching)
+- Schueler LSSchulNr-Aktualisierung (Bereich 200000-299999 mit Bereichsfilterung)
+- Schueler SchulwechselNr-Aktualisierung (random K_Schule.SchulNr Ersetzung)
+- Schueler LSBemerkung-Bereinigung (setzt auf NULL)
+- SchuelerAbgaenge-Löschung (vollständige Bereinigung)
 - Personengruppen_Personen-Löschung (vollständige Bereinigung)
 - K_AllgAdresse-Anonymisierung (allgemeine Adressen mit Namen, Adressen, Kontaktdaten)
 - SchuelerFotos-Löschung (vollständige Bereinigung)
@@ -256,12 +261,28 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **SchuelerFoerderempfehlungen Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
 
+**Schueler LSSchulNr Tabelle (Bereich 100000-199999):**
+- `LSSchulNr` wird durch eine zufällige SchulNr aus K_Schule ersetzt, die den gleichen `SchulformKrz` hat wie `LSSchulformSIM`
+- Schüler ohne passendes SchulformKrz werden übersprungen
+
+**Schueler LSSchulNr Tabelle (Bereich 200000-299999):**
+- `LSSchulNr` wird durch eine zufällige SchulNr aus K_Schule ersetzt, die auch im Bereich 200000-299999 liegt
+
+**Schueler SchulwechselNr Tabelle:**
+- `SchulwechselNr` wird durch eine zufällige SchulNr aus K_Schule ersetzt (für alle nicht-NULL Einträge)
+
+**Schueler LSBemerkung Tabelle:**
+- `LSBemerkung` ← NULL (für alle Einträge mit non-NULL Werten)
+
+**SchuelerAbgaenge Tabelle:**
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
+
 **SchuelerGSDaten Tabelle:**
 - `Anrede_Klassenlehrer` ← NULL
 - `Nachname_Klassenlehrer` ← NULL
 - `GS_Klasse` ← NULL
 
-**Personengruppen_Personen Tabelle:****
+**Personengruppen_Personen Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
 
 **Allgemeine Verwaltungs-Tabellen:**

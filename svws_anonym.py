@@ -2919,6 +2919,101 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def delete_and_reload_k_schule(self, dry_run=False):
+        """Delete all K_Schule entries and reload from K_Schule.csv file.
+        
+        Loads CSV with headers, parses data, deletes all existing records,
+        and inserts new entries into K_Schule table.
+        """
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_Schule'")
+            if not cursor.fetchone():
+                print("\nSkipping K_Schule reload: table not found")
+                return 0
+
+            # Load CSV file
+            csv_path = Path(__file__).parent / "K_Schule.csv"
+            if not csv_path.exists():
+                print(f"\nWarning: K_Schule.csv not found at {csv_path}")
+                return 0
+
+            # Count existing records before deletion
+            cursor.execute("SELECT COUNT(*) as count FROM K_Schule")
+            result = cursor.fetchone()
+            old_record_count = result.get("count", 0) if result else 0
+
+            print(f"\nFound {old_record_count} existing records in K_Schule")
+
+            if dry_run:
+                # Count records that would be inserted
+                with open(csv_path, "r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    new_records = list(reader)
+                print(f"DRY RUN - K_Schule reload:")
+                print(f"  Would delete {old_record_count} existing records")
+                print(f"  Would insert {len(new_records)} records from K_Schule.csv")
+                return old_record_count
+
+            # Delete existing records
+            delete_cursor = self.connection.cursor()
+            if old_record_count > 0:
+                delete_cursor.execute("DELETE FROM K_Schule")
+                print(f"  Deleted {old_record_count} existing records")
+
+            # Load and insert records from CSV
+            with open(csv_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                records = list(reader)
+
+            if not records:
+                print("\nNo records found in K_Schule.csv")
+                delete_cursor.close()
+                return old_record_count
+
+            # Get column names from CSV header (first record keys)
+            columns = list(records[0].keys())
+            
+            # Build INSERT statement
+            placeholders = ", ".join(["%s"] * len(columns))
+            columns_str = ", ".join(columns)
+            insert_query = f"INSERT INTO K_Schule ({columns_str}) VALUES ({placeholders})"
+
+            # Insert records
+            inserted_count = 0
+            for record in records:
+                values = tuple(record.get(col) for col in columns)
+                # Handle empty strings as NULL for some fields
+                values = tuple(None if v == "" else v for v in values)
+                delete_cursor.execute(insert_query, values)
+                inserted_count += 1
+
+            delete_cursor.close()
+            self.connection.commit()
+
+            print(f"  Inserted {inserted_count} records from K_Schule.csv")
+            print(f"\nSuccessfully reloaded K_Schule table")
+
+            return old_record_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        except Exception as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Error reading K_Schule.csv: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def delete_schueler_fotos(self, dry_run=False):
         """Delete all entries from SchuelerFotos table."""
         if not self.connection:
@@ -3002,6 +3097,270 @@ class DatabaseAnonymizer:
                 )
 
             return record_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def update_schueler_lsschulnummer(self, dry_run=False):
+        """Update Schueler.LSSchulnummer for two ranges:
+        
+        Range 1 (100000-199999): Replace with random SchulNr from K_Schule
+        where K_Schule.SchulformKrz matches Schueler.SchulformSIM.
+        
+        Range 2 (200000-299999): Replace with random SchulNr from K_Schule
+        that is also in the range 200000-299999.
+        """
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if tables exist
+            cursor.execute("SHOW TABLES LIKE 'Schueler'")
+            if not cursor.fetchone():
+                print("\nSkipping Schueler LSSchulnummer update: Schueler table not found")
+                return 0
+
+            cursor.execute("SHOW TABLES LIKE 'K_Schule'")
+            if not cursor.fetchone():
+                print("\nSkipping Schueler LSSchulnummer update: K_Schule table not found")
+                return 0
+
+            # Load all K_Schule records grouped by SchulformKrz
+            cursor.execute("SELECT SchulNr, SchulformKrz FROM K_Schule")
+            k_schule_records = cursor.fetchall()
+            
+            if not k_schule_records:
+                print("\nNo records found in K_Schule table")
+                return 0
+
+            # Build a mapping of SchulformKrz -> list of SchulNr
+            schulform_to_schulnr = {}
+            # Also collect SchulNr values in range 200000-299999
+            schulnr_range_2 = []
+            
+            for record in k_schule_records:
+                schulform_krz = record.get("SchulformKrz")
+                schulnr = record.get("SchulNr")
+                if schulnr:
+                    # Check if in range 200000-299999
+                    try:
+                        schulnr_int = int(schulnr)
+                        if 200000 <= schulnr_int <= 299999:
+                            schulnr_range_2.append(schulnr)
+                    except (ValueError, TypeError):
+                        pass
+                
+                if schulform_krz and schulnr:
+                    if schulform_krz not in schulform_to_schulnr:
+                        schulform_to_schulnr[schulform_krz] = []
+                    schulform_to_schulnr[schulform_krz].append(schulnr)
+
+            total_updated = 0
+            total_skipped = 0
+
+            # === RANGE 1: 100000-199999 ===
+            cursor.execute(
+                "SELECT ID, LSSchulNr, LSSchulformSIM FROM Schueler WHERE LSSchulNr >= 100000 AND LSSchulNr <= 199999"
+            )
+            range1_records = cursor.fetchall()
+
+            if range1_records:
+                print(f"\nFound {len(range1_records)} Schueler records with LSSchulNr in range 100000-199999")
+
+                if dry_run:
+                    print("DRY RUN - Schueler LSSchulNr range 1 (100000-199999) update based on SchulformKrz:")
+
+                updated_count = 0
+                skipped_count = 0
+                update_cursor = self.connection.cursor() if not dry_run else None
+
+                for record in range1_records:
+                    record_id = record.get("ID")
+                    old_lsschulnr = record.get("LSSchulNr")
+                    schulform_sim = record.get("LSSchulformSIM")
+
+                    # Find matching SchulNr from K_Schule with same SchulformKrz
+                    if schulform_sim not in schulform_to_schulnr:
+                        if dry_run:
+                            print(f"  ID {record_id}: No K_Schule records found for SchulformSIM={schulform_sim}, skipping")
+                        skipped_count += 1
+                        continue
+
+                    available_schulnrs = schulform_to_schulnr[schulform_sim]
+                    if not available_schulnrs:
+                        if dry_run:
+                            print(f"  ID {record_id}: No SchulNr available for SchulformSIM={schulform_sim}, skipping")
+                        skipped_count += 1
+                        continue
+
+                    new_lsschulnr = random.choice(available_schulnrs)
+
+                    if dry_run:
+                        print(f"  ID {record_id}: LSSchulNr {old_lsschulnr} -> {new_lsschulnr} (LSSchulformSIM={schulform_sim})")
+                    else:
+                        update_cursor.execute(
+                            "UPDATE Schueler SET LSSchulNr = %s WHERE ID = %s",
+                            (new_lsschulnr, record_id),
+                        )
+
+                    updated_count += 1
+
+                if not dry_run:
+                    update_cursor.close()
+                    self.connection.commit()
+                    print(f"Successfully updated {updated_count} records in Schueler LSSchulNr (range 1)")
+                    if skipped_count > 0:
+                        print(f"Skipped {skipped_count} records due to no matching SchulformKrz")
+                else:
+                    print(f"Dry run: {updated_count} records would be updated, {skipped_count} skipped")
+
+                total_updated += updated_count
+                total_skipped += skipped_count
+            else:
+                print("\nNo Schueler records found with LSSchulNr in range 100000-199999")
+
+            # === RANGE 2: 200000-299999 ===
+            cursor.execute(
+                "SELECT ID, LSSchulNr FROM Schueler WHERE LSSchulNr >= 200000 AND LSSchulNr <= 299999"
+            )
+            range2_records = cursor.fetchall()
+
+            if range2_records:
+                print(f"\nFound {len(range2_records)} Schueler records with LSSchulNr in range 200000-299999")
+
+                if not schulnr_range_2:
+                    print("Warning: No K_Schule records found with SchulNr in range 200000-299999, skipping range 2 update")
+                else:
+                    if dry_run:
+                        print("DRY RUN - Schueler LSSchulNr range 2 (200000-299999) update with matching range values:")
+
+                    updated_count = 0
+                    update_cursor = self.connection.cursor() if not dry_run else None
+
+                    for record in range2_records:
+                        record_id = record.get("ID")
+                        old_lsschulnr = record.get("LSSchulNr")
+
+                        new_lsschulnr = random.choice(schulnr_range_2)
+
+                        if dry_run:
+                            print(f"  ID {record_id}: LSSchulNr {old_lsschulnr} -> {new_lsschulnr}")
+                        else:
+                            update_cursor.execute(
+                                "UPDATE Schueler SET LSSchulNr = %s WHERE ID = %s",
+                                (new_lsschulnr, record_id),
+                            )
+
+                        updated_count += 1
+
+                    if not dry_run:
+                        update_cursor.close()
+                        self.connection.commit()
+                        print(f"Successfully updated {updated_count} records in Schueler LSSchulNr (range 2)")
+                    else:
+                        print(f"Dry run: {updated_count} records would be updated")
+
+                    total_updated += updated_count
+            else:
+                print("\nNo Schueler records found with LSSchulNr in range 200000-299999")
+
+            # === UPDATE SchulwechselNr ===
+            cursor.execute("SELECT COUNT(*) as count FROM Schueler WHERE SchulwechselNr IS NOT NULL")
+            result = cursor.fetchone()
+            schulwechsel_count = result.get("count", 0) if result else 0
+
+            if schulwechsel_count > 0:
+                print(f"\nFound {schulwechsel_count} Schueler records with SchulwechselNr set")
+
+                # Get all SchulNr from K_Schule for random selection
+                cursor.execute("SELECT SchulNr FROM K_Schule")
+                schulnr_records = cursor.fetchall()
+                schulnr_list = [rec.get("SchulNr") for rec in schulnr_records if rec.get("SchulNr")]
+
+                if not schulnr_list:
+                    print("Warning: No SchulNr values found in K_Schule table for SchulwechselNr update")
+                else:
+                    if dry_run:
+                        print(f"DRY RUN - Schueler SchulwechselNr update:")
+                        print(f"  Would replace {schulwechsel_count} SchulwechselNr values with random SchulNr from K_Schule")
+                    else:
+                        cursor.execute("SELECT ID, SchulwechselNr FROM Schueler WHERE SchulwechselNr IS NOT NULL")
+                        schulwechsel_records = cursor.fetchall()
+
+                        updated_count = 0
+                        update_cursor = self.connection.cursor()
+
+                        for record in schulwechsel_records:
+                            record_id = record.get("ID")
+                            old_schulwechselnr = record.get("SchulwechselNr")
+                            new_schulwechselnr = random.choice(schulnr_list)
+
+                            update_cursor.execute(
+                                "UPDATE Schueler SET SchulwechselNr = %s WHERE ID = %s",
+                                (new_schulwechselnr, record_id),
+                            )
+                            updated_count += 1
+
+                        update_cursor.close()
+                        self.connection.commit()
+                        print(f"Successfully updated {updated_count} records in Schueler SchulwechselNr")
+            else:
+                print("\nNo Schueler records found with SchulwechselNr set")
+
+            # === DELETE SchuelerAbgaenge ===
+            cursor.execute("SHOW TABLES LIKE 'SchuelerAbgaenge'")
+            if cursor.fetchone():
+                cursor.execute("SELECT COUNT(*) as count FROM SchuelerAbgaenge")
+                result = cursor.fetchone()
+                abgaenge_count = result.get("count", 0) if result else 0
+
+                if abgaenge_count > 0:
+                    print(f"\nFound {abgaenge_count} records in SchuelerAbgaenge table")
+
+                    if dry_run:
+                        print("DRY RUN - SchuelerAbgaenge would be completely cleared")
+                    else:
+                        delete_cursor = self.connection.cursor()
+                        delete_cursor.execute("DELETE FROM SchuelerAbgaenge")
+                        delete_cursor.close()
+                        self.connection.commit()
+                        print(f"Successfully deleted all {abgaenge_count} records from SchuelerAbgaenge table")
+                else:
+                    print("\nNo records found in SchuelerAbgaenge table")
+            else:
+                print("\nSchuelerAbgaenge table not found, skipping deletion")
+
+            # === CLEAR LSBemerkung ===
+            cursor.execute("SHOW TABLES LIKE 'Schueler'")
+            if cursor.fetchone():
+                cursor.execute("SELECT COUNT(*) as count FROM Schueler WHERE LSBemerkung IS NOT NULL")
+                result = cursor.fetchone()
+                lsbemerkung_count = result.get("count", 0) if result else 0
+
+                if lsbemerkung_count > 0:
+                    print(f"\nFound {lsbemerkung_count} records in Schueler with non-NULL LSBemerkung")
+
+                    if dry_run:
+                        print("DRY RUN - Schueler LSBemerkung would be cleared for all records with values")
+                    else:
+                        update_cursor = self.connection.cursor()
+                        update_cursor.execute("UPDATE Schueler SET LSBemerkung = NULL")
+                        update_cursor.close()
+                        self.connection.commit()
+                        print(f"Successfully cleared LSBemerkung for {lsbemerkung_count} records in Schueler table")
+                else:
+                    print("\nNo records found in Schueler with LSBemerkung set")
+            else:
+                print("\nSchueler table not found, skipping LSBemerkung clear")
+
+            return total_updated
 
         except mysql.connector.Error as e:
             if not dry_run:
@@ -3249,6 +3608,7 @@ def main():
                 db_anonymizer.anonymize_eigene_schule_logo(dry_run=args.dry_run)
                 db_anonymizer.delete_eigene_schule_texte(dry_run=args.dry_run)
                 db_anonymizer.reset_schule_credentials(dry_run=args.dry_run)
+                db_anonymizer.delete_and_reload_k_schule(dry_run=args.dry_run)
                 
                 # K_Lehrer (teacher) operations
                 db_anonymizer.anonymize_k_lehrer(dry_run=args.dry_run)
@@ -3281,6 +3641,7 @@ def main():
                 db_anonymizer.delete_personengruppen_personen(dry_run=args.dry_run)
                 db_anonymizer.delete_schueler_fotos(dry_run=args.dry_run)
                 db_anonymizer.delete_schueler_foerderempfehlungen(dry_run=args.dry_run)
+                db_anonymizer.update_schueler_lsschulnummer(dry_run=args.dry_run)
                 
                 # K_AllgAdresse operations
                 db_anonymizer.anonymize_k_allg_adresse(dry_run=args.dry_run)
