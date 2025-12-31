@@ -2808,6 +2808,95 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_k_telefonart(self, dry_run=False):
+        """Anonymize K_TelefonArt table by replacing Bezeichnung with 'Telefonart ' + ID.
+        
+        Protected values that will NOT be changed:
+        - Eltern
+        - Mutter
+        - Vater
+        - Notfallnummer
+        - Festnetz
+        - Handynummer
+        - Mobilnummer
+        - Großeltern
+        """
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_TelefonArt'")
+            if not cursor.fetchone():
+                print("\nSkipping K_TelefonArt anonymization: table not found")
+                return 0
+
+            # Protected values that should not be changed
+            protected_values = [
+                'Eltern', 'Mutter', 'Vater', 'Notfallnummer',
+                'Festnetz', 'Handynummer', 'Mobilnummer', 'Großeltern'
+            ]
+
+            # Fetch all records
+            cursor.execute("SELECT ID, Bezeichnung FROM K_TelefonArt")
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo records found in K_TelefonArt table")
+                return 0
+
+            print(f"\nFound {len(records)} records in K_TelefonArt table")
+
+            # Filter records to update (exclude protected values)
+            records_to_update = [
+                rec for rec in records 
+                if rec.get("Bezeichnung") not in protected_values
+            ]
+
+            if not records_to_update:
+                print("No records to update (all values are protected)")
+                return 0
+
+            print(f"  {len(records_to_update)} records will be updated (excluding protected values)")
+
+            if dry_run:
+                print("\nDRY RUN - K_TelefonArt anonymization:")
+                print(f"  (showing first 5 of {len(records_to_update)} records)")
+                for i, record in enumerate(records_to_update[:5]):
+                    record_id = record.get("ID")
+                    old_bezeichnung = record.get("Bezeichnung")
+                    new_bezeichnung = f"Telefonart {record_id}"
+                    print(f"  ID {record_id}: {old_bezeichnung} -> {new_bezeichnung}")
+            else:
+                updated_count = 0
+                update_cursor = self.connection.cursor()
+
+                for record in records_to_update:
+                    record_id = record.get("ID")
+                    new_bezeichnung = f"Telefonart {record_id}"
+                    
+                    update_cursor.execute(
+                        "UPDATE K_TelefonArt SET Bezeichnung = %s WHERE ID = %s",
+                        (new_bezeichnung, record_id)
+                    )
+                    updated_count += 1
+
+                update_cursor.close()
+                self.connection.commit()
+                print(f"Successfully anonymized {updated_count} records in K_TelefonArt table")
+
+            return len(records_to_update)
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def anonymize_k_kindergarten(self, dry_run=False):
         """Anonymize K_Kindergarten table with new designations, random locations, and street names."""
         if not self.connection:
@@ -3749,6 +3838,7 @@ def main():
                 db_anonymizer.anonymize_eigene_schule_abteilungen(dry_run=args.dry_run)
                 db_anonymizer.anonymize_eigene_schule_logo(dry_run=args.dry_run)
                 db_anonymizer.delete_eigene_schule_texte(dry_run=args.dry_run)
+                db_anonymizer.anonymize_k_telefonart(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_kindergarten(dry_run=args.dry_run)
                 db_anonymizer.reset_schule_credentials(dry_run=args.dry_run)
                 db_anonymizer.delete_and_reload_k_schule(dry_run=args.dry_run)
