@@ -2808,6 +2808,148 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_k_kindergarten(self, dry_run=False):
+        """Anonymize K_Kindergarten table with new designations, random locations, and street names."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_Kindergarten'")
+            if not cursor.fetchone():
+                print("\nSkipping K_Kindergarten anonymization: table not found")
+                return 0
+
+            # First, try to get column names to determine the actual structure
+            cursor.execute("DESCRIBE K_Kindergarten")
+            describe_results = cursor.fetchall()
+            columns = [col['Field'] for col in describe_results]
+            
+            # Check required columns exist
+            required_cols = ['ID', 'Bezeichnung', 'PLZ', 'Ort', 'Strassenname']
+            missing_cols = [col for col in required_cols if col not in columns]
+            if missing_cols:
+                print(f"\nSkipping K_Kindergarten anonymization: Missing required columns: {', '.join(missing_cols)}")
+                return 0
+
+            # Build the SELECT query with actual columns
+            select_cols = "ID, Bezeichnung, PLZ, Ort, Strassenname"
+            optional_cols = []
+            if 'HausNrZusatz' in columns:
+                optional_cols.append('HausNrZusatz')
+            if 'Tel' in columns:
+                optional_cols.append('Tel')
+            if 'Email' in columns:
+                optional_cols.append('Email')
+            if 'Bemerkung' in columns:
+                optional_cols.append('Bemerkung')
+            
+            if optional_cols:
+                select_cols += ", " + ", ".join(optional_cols)
+
+            # Fetch all K_Kindergarten records
+            cursor.execute(f"SELECT {select_cols} FROM K_Kindergarten")
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo records found in K_Kindergarten table")
+                return 0
+
+            print(f"\nFound {len(records)} records in K_Kindergarten table")
+
+            # Load all K_Ort records for random location selection (get both PLZ and Bezeichnung)
+            cursor.execute("SELECT PLZ, Bezeichnung FROM K_Ort")
+            ort_records = cursor.fetchall()
+            
+            if not ort_records:
+                print("Warning: No records found in K_Ort table for location assignment")
+                return 0
+
+            # Load all street names from Strassen.csv
+            csv_path = Path(__file__).parent / "Strassen.csv"
+            if not csv_path.exists():
+                print(f"Warning: Strassen.csv not found at {csv_path}")
+                return 0
+
+            with open(csv_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                strassen_records = list(reader)
+
+            if not strassen_records:
+                print("Warning: No records found in Strassen.csv")
+                return 0
+
+            strassen_list = [rec.get("Strasse") for rec in strassen_records if rec.get("Strasse")]
+
+            if dry_run:
+                print("DRY RUN - K_Kindergarten anonymization:")
+                print(f"  (showing first 5 of {len(records)} records)")
+
+            updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+
+            for record in records:
+                record_id = record.get("ID")
+                
+                # Set Bezeichnung to "Kindergarten " + ID
+                new_bezeichnung = f"Kindergarten {record_id}"
+                
+                # Get random K_Ort record (contains both PLZ and Bezeichnung values)
+                random_ort = random.choice(ort_records)
+                new_plz = random_ort.get("PLZ")
+                new_ort = random_ort.get("Bezeichnung")
+                
+                # Get random street name
+                new_strassenname = random.choice(strassen_list) if strassen_list else None
+                
+                if dry_run and updated_count < 5:
+                    print(f"  ID {record_id}: Bezeichnung -> {new_bezeichnung}, PLZ -> {new_plz}, Ort -> {new_ort}, Strassenname -> {new_strassenname}")
+                elif not dry_run:
+                    # Build UPDATE statement with actual columns
+                    set_clauses = [
+                        "Bezeichnung = %s",
+                        "PLZ = %s",
+                        "Ort = %s",
+                        "Strassenname = %s"
+                    ]
+                    params = [new_bezeichnung, new_plz, new_ort, new_strassenname]
+                    
+                    for col in ['HausNrZusatz', 'Tel', 'Email', 'Bemerkung']:
+                        if col in columns:
+                            set_clauses.append(f"{col} = NULL")
+                    
+                    set_clause_str = ", ".join(set_clauses)
+                    update_cursor.execute(
+                        f"UPDATE K_Kindergarten SET {set_clause_str} WHERE ID = %s",
+                        params + [record_id]
+                    )
+
+                updated_count += 1
+
+            if not dry_run:
+                update_cursor.close()
+                self.connection.commit()
+                print(f"Successfully anonymized {updated_count} records in K_Kindergarten table")
+            else:
+                print(f"Dry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        except Exception as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Error in K_Kindergarten anonymization: {type(e).__name__}: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def reset_schule_credentials(self, dry_run=False):
         """Reset SchuleCredentials table with new RSA keypair and AES key.
         
@@ -3607,6 +3749,7 @@ def main():
                 db_anonymizer.anonymize_eigene_schule_abteilungen(dry_run=args.dry_run)
                 db_anonymizer.anonymize_eigene_schule_logo(dry_run=args.dry_run)
                 db_anonymizer.delete_eigene_schule_texte(dry_run=args.dry_run)
+                db_anonymizer.anonymize_k_kindergarten(dry_run=args.dry_run)
                 db_anonymizer.reset_schule_credentials(dry_run=args.dry_run)
                 db_anonymizer.delete_and_reload_k_schule(dry_run=args.dry_run)
                 
