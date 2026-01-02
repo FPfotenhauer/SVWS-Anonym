@@ -517,7 +517,7 @@ class DatabaseAnonymizer:
 
         try:
             cursor.execute(
-                "SELECT ID, Vorname, Name, Zusatz, Geburtsname, Geschlecht, Email, SchulEmail, Geburtsdatum, Ausweisnummer, Geburtsort FROM Schueler"
+                "SELECT ID, Vorname, Name, Zusatz, Geburtsname, Geschlecht, Email, SchulEmail, Geburtsdatum, Ausweisnummer, Geburtsort, Telefon, Fax FROM Schueler"
             )
             records = cursor.fetchall()
 
@@ -617,6 +617,8 @@ class DatabaseAnonymizer:
                 old_geburtsdatum = record.get("Geburtsdatum")
                 old_ausweis = record.get("Ausweisnummer")
                 old_geburtsort = record.get("Geburtsort")
+                old_telefon = record.get("Telefon")
+                old_fax = record.get("Fax")
 
                 gender = self.anonymizer.get_gender_from_geschlecht(geschlecht)
 
@@ -683,6 +685,10 @@ class DatabaseAnonymizer:
                 # Set Geburtsort to "Testort" when not NULL
                 new_geburtsort = "Testort" if old_geburtsort is not None else None
 
+                # Anonymize Telefon and Fax similar to K_AllgAdresse
+                new_telefon = f"01234-{random.randint(100000, 999999)}"
+                new_fax = None
+
                 if dry_run:
                     gender_str = {3: "männlich", 4: "weiblich", 5: "neutral", 6: "neutral"}.get(
                         geschlecht, "unbekannt"
@@ -696,6 +702,8 @@ class DatabaseAnonymizer:
                     print(f"  Email: {old_email} -> {new_email}")
                     print(f"  SchulEmail: {old_schul_email} -> {new_schul_email}")
                     print(f"  Ausweisnummer: {old_ausweis} -> {new_ausweis}")
+                    print(f"  Telefon: {old_telefon} -> {new_telefon}")
+                    print(f"  Fax: {old_fax} -> {new_fax}")
                     print(
                         f"  Ort_ID -> {new_ort_id}; Ortsteil_ID -> {new_ortsteil_id}; "
                         f"Strassenname -> {new_strasse}; HausNr -> {new_hausnr}; HausNrZusatz -> {new_hausnr_zusatz}"
@@ -703,7 +711,7 @@ class DatabaseAnonymizer:
                     print(f"  Geburtsort: {old_geburtsort} -> {new_geburtsort}")
                 else:
                     update_cursor.execute(
-                        "UPDATE Schueler SET Vorname = %s, Name = %s, Zusatz = %s, Geburtsname = %s, Geburtsdatum = %s, Ausweisnummer = %s, Email = %s, SchulEmail = %s, "
+                        "UPDATE Schueler SET Vorname = %s, Name = %s, Zusatz = %s, Geburtsname = %s, Geburtsdatum = %s, Ausweisnummer = %s, Email = %s, SchulEmail = %s, Telefon = %s, Fax = %s, "
                         "Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s, Geburtsort = %s WHERE ID = %s",
                         (
                             new_vorname,
@@ -714,6 +722,8 @@ class DatabaseAnonymizer:
                             new_ausweis,
                             new_email,
                             new_schul_email,
+                            new_telefon,
+                            new_fax,
                             new_ort_id,
                             new_ortsteil_id,
                             new_strasse,

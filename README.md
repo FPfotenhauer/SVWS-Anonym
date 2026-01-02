@@ -231,6 +231,8 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Name` wird durch einen zufälligen Nachnamen ersetzt
 - `Geburtsdatum` wird randomisiert (Tag wird zufällig geändert, Monat und Jahr bleiben erhalten)
 - `Geburtsort` wird auf "Testort" gesetzt (wenn nicht NULL, sonst NULL)
+- `Telefon` wird anonymisiert im Format "01234-XXXXXX" (wie bei K_AllgAdresse)
+- `Fax` wird auf NULL gesetzt (wie bei K_AllgAdresse)
 - Adressdaten (`Ort_ID`, `Strassenname`, `HausNr`) werden aus CSV-Daten zugewiesen
  - Transportfelder: `Idext` ← NULL, `Fahrschueler_ID` ← NULL, `Haltestelle_ID` ← NULL
  - Änderungsmarker: `ModifiziertVon` ← "Admin"
