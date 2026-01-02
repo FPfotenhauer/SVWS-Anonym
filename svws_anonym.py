@@ -517,7 +517,7 @@ class DatabaseAnonymizer:
 
         try:
             cursor.execute(
-                "SELECT ID, Vorname, Name, Zusatz, Geburtsname, Geschlecht, Email, SchulEmail, Geburtsdatum, Ausweisnummer, Geburtsort FROM Schueler"
+                "SELECT ID, Vorname, Name, Zusatz, Geburtsname, Geschlecht, Email, SchulEmail, Geburtsdatum, Ausweisnummer, Geburtsort, Telefon, Fax FROM Schueler"
             )
             records = cursor.fetchall()
 
@@ -617,6 +617,8 @@ class DatabaseAnonymizer:
                 old_geburtsdatum = record.get("Geburtsdatum")
                 old_ausweis = record.get("Ausweisnummer")
                 old_geburtsort = record.get("Geburtsort")
+                old_telefon = record.get("Telefon")
+                old_fax = record.get("Fax")
 
                 gender = self.anonymizer.get_gender_from_geschlecht(geschlecht)
 
@@ -682,6 +684,10 @@ class DatabaseAnonymizer:
                 
                 # Set Geburtsort to "Testort" when not NULL
                 new_geburtsort = "Testort" if old_geburtsort is not None else None
+                
+                # Anonymize Telefon and Fax fields
+                new_telefon = f"012345-{random.randint(100000, 999999)}" if old_telefon is not None else None
+                new_fax = f"012345-{random.randint(100000, 999999)}" if old_fax is not None else None
 
                 if dry_run:
                     gender_str = {3: "männlich", 4: "weiblich", 5: "neutral", 6: "neutral"}.get(
@@ -701,10 +707,12 @@ class DatabaseAnonymizer:
                         f"Strassenname -> {new_strasse}; HausNr -> {new_hausnr}; HausNrZusatz -> {new_hausnr_zusatz}"
                     )
                     print(f"  Geburtsort: {old_geburtsort} -> {new_geburtsort}")
+                    print(f"  Telefon: {old_telefon} -> {new_telefon}")
+                    print(f"  Fax: {old_fax} -> {new_fax}")
                 else:
                     update_cursor.execute(
                         "UPDATE Schueler SET Vorname = %s, Name = %s, Zusatz = %s, Geburtsname = %s, Geburtsdatum = %s, Ausweisnummer = %s, Email = %s, SchulEmail = %s, "
-                        "Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s, Geburtsort = %s WHERE ID = %s",
+                        "Ort_ID = %s, Ortsteil_ID = %s, Strassenname = %s, HausNr = %s, HausNrZusatz = %s, Geburtsort = %s, Telefon = %s, Fax = %s WHERE ID = %s",
                         (
                             new_vorname,
                             new_name,
@@ -720,6 +728,8 @@ class DatabaseAnonymizer:
                             new_hausnr,
                             new_hausnr_zusatz,
                             new_geburtsort,
+                            new_telefon,
+                            new_fax,
                             record_id,
                         ),
                     )
