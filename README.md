@@ -237,6 +237,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
  - Transportfelder: `Idext` ← NULL, `Fahrschueler_ID` ← NULL, `Haltestelle_ID` ← NULL
  - Änderungsmarker: `ModifiziertVon` ← "Admin"
 
+**Schueler_AllgAdr Tabelle:**
+- `Ausbilder` wird auf NULL gesetzt
+
 **K_AllgAdresse Tabelle:**
 - `AllgAdrName1` wird auf zwei zufällige Nachnamen kombiniert wie "Name1 und Name2" gesetzt
 - `AllgAdrName2`, `AllgAdrHausNrZusatz`, `AllgOrtsteil_ID` ← NULL

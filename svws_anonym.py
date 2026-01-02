@@ -2209,6 +2209,67 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def clear_schueler_allgadr_ausbilder(self, dry_run=False):
+        """Set Ausbilder to NULL in schueler_allgadr table."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'schueler_allgadr'")
+            if not cursor.fetchone():
+                print("\nSkipping schueler_allgadr update: table 'schueler_allgadr' not found")
+                return 0
+
+            # Only select rows where Ausbilder is not already NULL
+            cursor.execute("SELECT ID, Ausbilder FROM schueler_allgadr WHERE Ausbilder IS NOT NULL")
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo records found in schueler_allgadr table with Ausbilder set")
+                return 0
+
+            print(f"\nFound {len(records)} records in schueler_allgadr table with Ausbilder set")
+
+            if dry_run:
+                print("\nDRY RUN - schueler_allgadr changes:")
+
+            updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+
+            for record in records:
+                record_id = record.get("ID")
+                old_ausbilder = record.get("Ausbilder")
+
+                if dry_run:
+                    print(f"  ID {record_id}: Ausbilder {old_ausbilder} -> NULL")
+                else:
+                    update_cursor.execute(
+                        "UPDATE schueler_allgadr SET Ausbilder = %s WHERE ID = %s",
+                        (None, record_id),
+                    )
+
+                updated_count += 1
+
+            if not dry_run:
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated {updated_count} records in schueler_allgadr table (Ausbilder=NULL)")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def clear_schueler_leistungsdaten(self, dry_run=False):
         """Clear Lernentw field in SchuelerLeistungsdaten table."""
         if not self.connection:
@@ -3885,6 +3946,7 @@ def main():
                 db_anonymizer.delete_schueler_fotos(dry_run=args.dry_run)
                 db_anonymizer.delete_schueler_foerderempfehlungen(dry_run=args.dry_run)
                 db_anonymizer.update_schueler_lsschulnummer(dry_run=args.dry_run)
+                db_anonymizer.clear_schueler_allgadr_ausbilder(dry_run=args.dry_run)
                 
                 # K_AllgAdresse operations
                 db_anonymizer.anonymize_k_allg_adresse(dry_run=args.dry_run)
