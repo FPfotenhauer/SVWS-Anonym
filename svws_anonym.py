@@ -2667,6 +2667,116 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def update_schueler_allgadr_ausbilder(self, dry_run=False):
+        """Replace Schueler_AllgAdr.Ausbilder with random last names from nachnamen.json."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'Schueler_AllgAdr'")
+            if not cursor.fetchone():
+                print("\nSkipping Schueler_AllgAdr: table not found")
+                return 0
+
+            # Count records where Ausbilder IS NOT NULL
+            cursor.execute("SELECT ID, Ausbilder FROM Schueler_AllgAdr WHERE Ausbilder IS NOT NULL")
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo Schueler_AllgAdr records found with non-NULL Ausbilder")
+                return 0
+
+            print(f"\nFound {len(records)} records in Schueler_AllgAdr table with non-NULL Ausbilder")
+
+            if dry_run:
+                print("\nDRY RUN - Schueler_AllgAdr Ausbilder update:")
+
+            updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+            
+            for record in records:
+                record_id = record.get("ID")
+                old_ausbilder = record.get("Ausbilder")
+                new_ausbilder = random.choice(self.anonymizer.nachnamen)
+
+                if dry_run:
+                    print(f"  ID {record_id}: Ausbilder '{old_ausbilder}' -> '{new_ausbilder}'")
+                else:
+                    update_cursor.execute(
+                        "UPDATE Schueler_AllgAdr SET Ausbilder = %s WHERE ID = %s",
+                        (new_ausbilder, record_id),
+                    )
+
+                updated_count += 1
+
+            if not dry_run:
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Ausbilder for {updated_count} records in Schueler_AllgAdr table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def update_schueler_bk_abschluss_thema(self, dry_run=False):
+        """Replace SchuelerBKAbschluss.ThemaAbschlussarbeit with 'Thema der Arbeit'."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'SchuelerBKAbschluss'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuelerBKAbschluss: table not found")
+                return 0
+
+            # Count records where ThemaAbschlussarbeit IS NOT NULL
+            cursor.execute("SELECT COUNT(*) as count FROM SchuelerBKAbschluss WHERE ThemaAbschlussarbeit IS NOT NULL")
+            result = cursor.fetchone()
+            record_count = result.get("count", 0) if result else 0
+
+            if record_count == 0:
+                print("\nNo SchuelerBKAbschluss records found with non-NULL ThemaAbschlussarbeit")
+                return 0
+
+            print(f"\nFound {record_count} records in SchuelerBKAbschluss table with non-NULL ThemaAbschlussarbeit")
+
+            if dry_run:
+                print("\nDRY RUN - SchuelerBKAbschluss ThemaAbschlussarbeit update:")
+                print(f"  Would set ThemaAbschlussarbeit to 'Thema der Arbeit' for {record_count} records")
+            else:
+                update_cursor = self.connection.cursor()
+                update_cursor.execute(
+                    "UPDATE SchuelerBKAbschluss SET ThemaAbschlussarbeit = %s WHERE ThemaAbschlussarbeit IS NOT NULL",
+                    ("Thema der Arbeit",),
+                )
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated ThemaAbschlussarbeit for {record_count} records in SchuelerBKAbschluss table")
+
+            return record_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def update_schueler_liste_erzeuger(self, dry_run=False):
         """Set SchuelerListe.Erzeuger to 1 where not NULL."""
         if not self.connection:
@@ -3875,6 +3985,8 @@ def main():
                 db_anonymizer.delete_schueler_fotos(dry_run=args.dry_run)
                 db_anonymizer.delete_schueler_foerderempfehlungen(dry_run=args.dry_run)
                 db_anonymizer.update_schueler_lsschulnummer(dry_run=args.dry_run)
+                db_anonymizer.update_schueler_allgadr_ausbilder(dry_run=args.dry_run)
+                db_anonymizer.update_schueler_bk_abschluss_thema(dry_run=args.dry_run)
                 
                 # K_AllgAdresse operations
                 db_anonymizer.anonymize_k_allg_adresse(dry_run=args.dry_run)
