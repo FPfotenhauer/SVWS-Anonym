@@ -245,7 +245,7 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `AllgAdrOrt_ID` wird auf eine zufällig existierende Ort-ID aus K_Ort gesetzt
 - `AllgAdrTelefon1` wird auf "01234-" + 6 zufällige Ziffern gesetzt (z.B. "01234-567890")
 - `AllgAdrTelefon2`, `AllgAdrFax` ← NULL
-- `AllgAdrEmail` wird auf `AllgAdrName1` ohne Leerzeichen + "@betrieb.example.com" gesetzt (z.B. "MülleundSchmidt@betrieb.example.com")
+- `AllgAdrEmail` wird auf `AllgAdrName1` ohne Leerzeichen + "@betrieb.example.com" gesetzt (z.B. "MuellerundSchmidt@betrieb.example.com")
 - `AllgAdrBemerkungen`, `AllgAdrZusatz1`, `AllgAdrZusatz2` ← NULL
 
 **AllgAdrAnsprechpartner Tabelle:**
@@ -323,23 +323,7 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `BenutzerAllgemein`: Alle Einträge werden gelöscht, Administrator wird neu angelegt (ID=1, Anzeigename=Administrator, CredentialID=1)
 - `Credentials`: Alle Einträge werden gelöscht, Admin-Credential wird neu angelegt (ID=1, Benutzername=Admin)
 
-*General administrative tables: deletes all entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, and TextExportVorlagen. Recreates admin user in Benutzer, BenutzerAllgemein, and Credentials tables.*
 
-```
-- `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
-- `Name` wird durch einen zufälligen Nachnamen ersetzt
-- `Zusatz` (zusätzliche Vornamen) wird mit zufälligen Namen des gleichen Geschlechts ersetzt, wobei der neue `Vorname` enthalten sein muss
-- `Geburtsname` wird durch einen zufälligen Nachnamen ersetzt (nur wenn nicht NULL)
-- `Email` und weitere Kontaktdaten werden anonymisiert
-- Adressdaten werden ähnlich wie bei K_Lehrer behandelt
-
-
-
-**Geschlecht-Werte:** 3 = männlich, 4 = weiblich, 5/6 = neutral (zufälliges Geschlecht)
-
-Das Programm fragt nach Datenbankname, Benutzername und Passwort für die Datenbankverbindung.
-
-*Connects to the database and anonymizes the following tables: EigeneSchule (school information with standardized values), EigeneSchule_Email (SMTP configuration), EigeneSchule_Logo (base64 logo from PNG file), K_Lehrer (teachers with comprehensive field anonymization including names, emails, phones, birthdate randomization, IdentNr1 generation, addresses from CSV, and 4-character unique `LIDKrz`), CredentialsLernplattformen (username format for teachers and students with duplicate handling), LehrerAbschnittsdaten (StammschulNr), Schueler (students with similar comprehensive anonymization), SchuelerErzAdr (names, first names, address normalization, email and misc clears), and SchuelerVermerke (complete deletion). The program prompts for database name, username and password.*
 
 ### Dry-Run Modus (Dry-Run Mode)
 
@@ -355,34 +339,6 @@ Zeigt an, welche Änderungen vorgenommen würden, ohne die Datenbank tatsächlic
 
 ```bash
 python svws_anonym.py --config /path/to/config.json --anonymize
-```
-
-### Programmatische Verwendung (Programmatic Usage)
-
-```python
-from svws_anonym import NameAnonymizer, DatabaseConfig
-
-# Datenbankkonfiguration laden
-db_config = DatabaseConfig()  # Lädt config.json aus dem aktuellen Verzeichnis
-# oder mit benutzerdefiniertem Pfad:
-# db_config = DatabaseConfig("/path/to/config.json")
-
-# Verbindungsparameter abrufen
-conn_params = db_config.get_connection_params()
-print(f"Verbinde mit Datenbank: {db_config.database}")
-
-# Anonymizer initialisieren
-anonymizer = NameAnonymizer()
-
-# Vornamen anonymisieren
-new_firstname_m = anonymizer.anonymize_firstname("Max", gender='m')
-new_firstname_w = anonymizer.anonymize_firstname("Erika", gender='w')
-
-# Nachnamen anonymisieren
-new_lastname = anonymizer.anonymize_lastname("Mustermann")
-
-# Vollständige Namen anonymisieren
-firstname, lastname = anonymizer.anonymize_fullname("Max", "Mustermann", gender='m')
 ```
 
 ## Konfigurationsdatei (Configuration File)
