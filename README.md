@@ -112,10 +112,16 @@ chmod +x svws_anonym.py
 
 ## Verwendung (Usage)
 
+### Anzeige aller möglichen Parameter (Show Parameters)
+
+```bash
+python svws_anonym.py --help
+```
+
 ### Basis-Verwendung (Basic Usage)
 
 ```bash
-python svws_anonym.py
+python svws_anonym.py --dry-run
 ```
 
 Zeigt Beispiel-Anonymisierungen an, ohne die Datenbank zu ändern.
