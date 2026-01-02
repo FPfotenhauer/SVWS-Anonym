@@ -25,6 +25,8 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - SMTP-Konfigurations-Anonymisierung
 - Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
 - EigeneSchule_Texte-Löschung (vollständige Bereinigung)
+- K_TelefonArt-Anonymisierung (Bezeichnung zu "Telefonart " + ID, schützt Standard-Werte)
+- K_Kindergarten-Anonymisierung (Bezeichnung, PLZ/Ort aus K_Ort, Straßennamen, Kontaktfelder)
 - SchuleCredentials-Reset (generiert neue RSA 2048-bit Schlüsselpaare und AES 256-bit Schlüssel)
 - Lernplattformen-Anonymisierung (Bezeichnung und Konfiguration)
 - Lernplattform-Anmeldedaten-Anonymisierung (Lehrer und Schüler mit Initialkennwort und Sicherheitsfeld-Bereinigung)
@@ -37,8 +39,15 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - Schueler-Transportfelder-Bereinigung (setzt Idext/Fahrschueler_ID/Haltestelle_ID auf NULL)
 - Schueler-Änderungsmarker (setzt ModifiziertVon auf "Admin")
 - SchuelerGSDaten-Bereinigung (setzt Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse auf NULL)
+- Schueler LSSchulNr-Aktualisierung (Bereich 100000-199999 mit SchulformKrz-Matching)
+- Schueler LSSchulNr-Aktualisierung (Bereich 200000-299999 mit Bereichsfilterung)
+- Schueler SchulwechselNr-Aktualisierung (random K_Schule.SchulNr Ersetzung)
+- Schueler LSBemerkung-Bereinigung (setzt auf NULL)
+- SchuelerAbgaenge-Löschung (vollständige Bereinigung)
 - Personengruppen_Personen-Löschung (vollständige Bereinigung)
 - K_AllgAdresse-Anonymisierung (allgemeine Adressen mit Namen, Adressen, Kontaktdaten)
+- Schueler_AllgAdr Ausbilder-Anonymisierung (Ausbildername mit zufälligen Nachnamen ersetzen)
+- SchuelerBKAbschluss ThemaAbschlussarbeit-Anonymisierung (Thema mit standardisiertem Text ersetzen)
 - SchuelerFotos-Löschung (vollständige Bereinigung)
 - SchuelerFoerderempfehlungen-Löschung (vollständige Bereinigung)
 - LehrerFotos-Löschung (vollständige Bereinigung)
@@ -48,7 +57,7 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - K_Lehrer-Titel-Bereinigung (setzt "Titel" auf NULL)
 - Allgemeine Verwaltungs-Bereinigung (löscht Einträge aus: Schild_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, TextExportVorlagen; setzt Admin-Benutzer in Benutzer, BenutzerAllgemein, Credentials zurück)
 
-*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, learning platform credentials for teachers and students, teacher section data anonymization, teacher `SerNr` anonymization (sets to ddddX), teacher `PANr` anonymization (sets to PA + 7 digits), teacher `LBVNr` anonymization (sets to LB + 7 digits), complete deletion of student notes, parent/guardian data anonymization, SchuelerGSDaten field clearing (Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse), SchuelerFoerderempfehlungen deletion, general address anonymization with names, addresses, and contact information, and general administrative tables cleanup (deletes entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte tables, SchuleOAuthSecrets, Logins, and TextExportVorlagen).*
+*Features include: name anonymization, gender-specific first names, consistent mapping, authentic German names, birthdate randomization, IdentNr1 generation, email/phone generation, CSV address integration, school information anonymization, SMTP configuration, logo replacement from PNG files, K_TelefonArt anonymization with protected standard values, K_Kindergarten anonymization with designation formatting and random addresses, learning platform credentials for teachers and students, teacher section data anonymization, teacher `SerNr` anonymization (sets to ddddX), teacher `PANr` anonymization (sets to PA + 7 digits), teacher `LBVNr` anonymization (sets to LB + 7 digits), complete deletion of student notes, parent/guardian data anonymization, SchuelerGSDaten field clearing (Anrede_Klassenlehrer, Nachname_Klassenlehrer, GS_Klasse), SchuelerFoerderempfehlungen deletion, general address anonymization with names, addresses, and contact information, and general administrative tables cleanup (deletes entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte tables, SchuleOAuthSecrets, Logins, and TextExportVorlagen).*
 
 ## Voraussetzungen (Requirements)
 
@@ -146,6 +155,17 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 **EigeneSchule_Texte Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**K_TelefonArt Tabelle:**
+- `Bezeichnung` wird auf "Telefonart " + ID gesetzt (z.B. "Telefonart 5", "Telefonart 22")
+- Geschützte Werte werden NICHT geändert: Eltern, Mutter, Vater, Notfallnummer, Festnetz, Handynummer, Mobilnummer, Großeltern
+
+**K_Kindergarten Tabelle:**
+- `Bezeichnung` wird auf "Kindergarten " + ID gesetzt (z.B. "Kindergarten 1", "Kindergarten 2")
+- `PLZ` wird durch eine zufällige PLZ aus K_Ort ersetzt
+- `Ort` wird durch eine zufällige Ortsbezeichnung (K_Ort.Bezeichnung) ersetzt
+- `Strassenname` wird durch einen zufälligen Straßennamen aus Strassen.csv ersetzt
+- Bereinigung: `HausNrZusatz`, `Tel`, `Email`, `Bemerkung` ← NULL
 
 **SchuleCredentials Tabelle:**
 - Alle Einträge werden gelöscht
@@ -256,12 +276,34 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **SchuelerFoerderempfehlungen Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
 
+**Schueler LSSchulNr Tabelle (Bereich 100000-199999):**
+- `LSSchulNr` wird durch eine zufällige SchulNr aus K_Schule ersetzt, die den gleichen `SchulformKrz` hat wie `LSSchulformSIM`
+- Schüler ohne passendes SchulformKrz werden übersprungen
+
+**Schueler LSSchulNr Tabelle (Bereich 200000-299999):**
+- `LSSchulNr` wird durch eine zufällige SchulNr aus K_Schule ersetzt, die auch im Bereich 200000-299999 liegt
+
+**Schueler SchulwechselNr Tabelle:**
+- `SchulwechselNr` wird durch eine zufällige SchulNr aus K_Schule ersetzt (für alle nicht-NULL Einträge)
+
+**Schueler LSBemerkung Tabelle:**
+- `LSBemerkung` ← NULL (für alle Einträge mit non-NULL Werten)
+
+**Schueler_AllgAdr Tabelle:**
+- `Ausbilder` wird durch einen zufälligen Nachnamen aus `nachnamen.json` ersetzt (nur für Einträge mit non-NULL Werten)
+
+**SchuelerBKAbschluss Tabelle:**
+- `ThemaAbschlussarbeit` wird auf "Thema der Arbeit" gesetzt (nur für Einträge mit non-NULL Werten)
+
+**SchuelerAbgaenge Tabelle:**
+- Alle Einträge werden gelöscht (vollständige Bereinigung)
+
 **SchuelerGSDaten Tabelle:**
 - `Anrede_Klassenlehrer` ← NULL
 - `Nachname_Klassenlehrer` ← NULL
 - `GS_Klasse` ← NULL
 
-**Personengruppen_Personen Tabelle:****
+**Personengruppen_Personen Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
 
 **Allgemeine Verwaltungs-Tabellen:**
