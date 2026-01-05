@@ -27,6 +27,7 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - EigeneSchule_Texte-Löschung (vollständige Bereinigung)
 - K_TelefonArt-Anonymisierung (Bezeichnung zu "Telefonart " + ID, schützt Standard-Werte)
 - K_Kindergarten-Anonymisierung (Bezeichnung, PLZ/Ort aus K_Ort, Straßennamen, Kontaktfelder)
+- Personengruppen-Anonymisierung (Gruppenname, Zusatzinfo, SammelEmail)
 - SchuleCredentials-Reset (generiert neue RSA 2048-bit Schlüsselpaare und AES 256-bit Schlüssel)
 - Lernplattformen-Anonymisierung (Bezeichnung und Konfiguration)
 - Lernplattform-Anmeldedaten-Anonymisierung (Lehrer und Schüler mit Initialkennwort und Sicherheitsfeld-Bereinigung)
@@ -172,6 +173,11 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Ort` wird durch eine zufällige Ortsbezeichnung (K_Ort.Bezeichnung) ersetzt
 - `Strassenname` wird durch einen zufälligen Straßennamen aus Strassen.csv ersetzt
 - Bereinigung: `HausNrZusatz`, `Tel`, `Email`, `Bemerkung` ← NULL
+
+**Personengruppen Tabelle:**
+- `Gruppenname` wird auf "Gruppe " + ID gesetzt (z.B. "Gruppe 1", "Gruppe 2")
+- `Zusatzinfo` wird auf "Info" gesetzt
+- `SammelEmail` wird auf "gruppe" + ID + "@gruppe.example.com" gesetzt (z.B. "gruppe1@gruppe.example.com")
 
 **SchuleCredentials Tabelle:**
 - Alle Einträge werden gelöscht

@@ -3159,6 +3159,122 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_personengruppen(self, dry_run=False):
+        """Anonymize Personengruppen table.
+        
+        Sets:
+        - Gruppenname to "Gruppe " + ID
+        - Zusatzinfo to "Info"
+        - SammelEmail to "gruppeID@gruppe.example.com"
+        """
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'Personengruppen'")
+            if not cursor.fetchone():
+                print("\nSkipping Personengruppen anonymization: table not found")
+                return 0
+
+            # Check column structure
+            cursor.execute("DESCRIBE Personengruppen")
+            describe_results = cursor.fetchall()
+            columns = [col['Field'] for col in describe_results]
+            
+            # Check required columns exist
+            if 'ID' not in columns:
+                print("\nSkipping Personengruppen anonymization: Missing required column ID")
+                return 0
+
+            # Build SELECT query with available columns
+            select_cols = ['ID']
+            optional_cols = ['Gruppenname', 'Zusatzinfo', 'SammelEmail']
+            available_optional = [col for col in optional_cols if col in columns]
+            
+            if not available_optional:
+                print("\nSkipping Personengruppen anonymization: No updatable columns found")
+                return 0
+            
+            select_cols.extend(available_optional)
+            select_query = "SELECT " + ", ".join(select_cols) + " FROM Personengruppen"
+
+            # Fetch all records
+            cursor.execute(select_query)
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo records found in Personengruppen table")
+                return 0
+
+            print(f"\nFound {len(records)} records in Personengruppen table")
+
+            if dry_run:
+                print("DRY RUN - Personengruppen anonymization:")
+                print(f"  (showing first 5 of {len(records)} records)")
+                for i, record in enumerate(records[:5]):
+                    record_id = record.get("ID")
+                    updates = []
+                    if 'Gruppenname' in available_optional:
+                        updates.append(f"Gruppenname -> Gruppe {record_id}")
+                    if 'Zusatzinfo' in available_optional:
+                        updates.append(f"Zusatzinfo -> Info")
+                    if 'SammelEmail' in available_optional:
+                        updates.append(f"SammelEmail -> gruppe{record_id}@gruppe.example.com")
+                    print(f"  ID {record_id}: {', '.join(updates)}")
+            else:
+                updated_count = 0
+                update_cursor = self.connection.cursor()
+
+                for record in records:
+                    record_id = record.get("ID")
+                    
+                    # Build UPDATE statement with available columns
+                    set_clauses = []
+                    params = []
+                    
+                    if 'Gruppenname' in available_optional:
+                        set_clauses.append("Gruppenname = %s")
+                        params.append(f"Gruppe {record_id}")
+                    
+                    if 'Zusatzinfo' in available_optional:
+                        set_clauses.append("Zusatzinfo = %s")
+                        params.append("Info")
+                    
+                    if 'SammelEmail' in available_optional:
+                        set_clauses.append("SammelEmail = %s")
+                        params.append(f"gruppe{record_id}@gruppe.example.com")
+                    
+                    if set_clauses:
+                        set_clause_str = ", ".join(set_clauses)
+                        params.append(record_id)
+                        update_cursor.execute(
+                            f"UPDATE Personengruppen SET {set_clause_str} WHERE ID = %s",
+                            params
+                        )
+                        updated_count += 1
+
+                update_cursor.close()
+                self.connection.commit()
+                print(f"Successfully anonymized {updated_count} records in Personengruppen table")
+
+            return len(records) if dry_run else updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        except Exception as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Error in Personengruppen anonymization: {type(e).__name__}: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def reset_schule_credentials(self, dry_run=False):
         """Reset SchuleCredentials table with new RSA keypair and AES key.
         
@@ -3960,6 +4076,7 @@ def main():
                 db_anonymizer.delete_eigene_schule_texte(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_telefonart(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_kindergarten(dry_run=args.dry_run)
+                db_anonymizer.anonymize_personengruppen(dry_run=args.dry_run)
                 db_anonymizer.reset_schule_credentials(dry_run=args.dry_run)
                 db_anonymizer.delete_and_reload_k_schule(dry_run=args.dry_run)
                 
