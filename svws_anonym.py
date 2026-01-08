@@ -2061,6 +2061,136 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_benutzergruppen(self, dry_run=False):
+        """Update Benutzergruppen.Bezeichnung with 'Bezeichnung '+ID, excluding protected values."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'Benutzergruppen'")
+            if not cursor.fetchone():
+                print("\nSkipping Benutzergruppen: table not found")
+                return 0
+
+            # Protected values that should not be changed
+            protected_values = ["Administrator", "Schulleitung", "Lehrer", "Sekretariat"]
+            placeholders = ",".join(["%s"] * len(protected_values))
+
+            # Get records where Bezeichnung IS NOT NULL and not in protected list
+            query = f"SELECT ID, Bezeichnung FROM Benutzergruppen WHERE Bezeichnung IS NOT NULL AND Bezeichnung NOT IN ({placeholders})"
+            cursor.execute(query, protected_values)
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo Benutzergruppen records found with non-NULL Bezeichnung (excluding protected values)")
+                return 0
+
+            print(f"\nFound {len(records)} records in Benutzergruppen table with non-NULL Bezeichnung (excluding protected values)")
+
+            if dry_run:
+                print("\nDRY RUN - Benutzergruppen Bezeichnung update:")
+
+            updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+
+            for record in records:
+                record_id = record.get("ID")
+                old_bezeichnung = record.get("Bezeichnung")
+                new_bezeichnung = f"Bezeichnung {record_id}"
+
+                if dry_run:
+                    print(f"  ID {record_id}: Bezeichnung '{old_bezeichnung}' -> '{new_bezeichnung}'")
+                else:
+                    update_cursor.execute(
+                        "UPDATE Benutzergruppen SET Bezeichnung = %s WHERE ID = %s",
+                        (new_bezeichnung, record_id),
+                    )
+
+                updated_count += 1
+
+            if not dry_run:
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Bezeichnung for {updated_count} records in Benutzergruppen table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def anonymize_k_datenschutz(self, dry_run=False):
+        """Update K_Datenschutz.Bezeichnung with 'Bezeichnung '+ID, excluding 'Verwendung Foto' and NULL values."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_Datenschutz'")
+            if not cursor.fetchone():
+                print("\nSkipping K_Datenschutz: table not found")
+                return 0
+
+            # Get records where Bezeichnung IS NOT NULL and not 'Verwendung Foto'
+            query = "SELECT ID, Bezeichnung FROM K_Datenschutz WHERE Bezeichnung IS NOT NULL AND Bezeichnung != %s"
+            cursor.execute(query, ("Verwendung Foto",))
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo K_Datenschutz records found with non-NULL Bezeichnung (excluding 'Verwendung Foto')")
+                return 0
+
+            print(f"\nFound {len(records)} records in K_Datenschutz table with non-NULL Bezeichnung (excluding 'Verwendung Foto')")
+
+            if dry_run:
+                print("\nDRY RUN - K_Datenschutz Bezeichnung update:")
+
+            updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+
+            for record in records:
+                record_id = record.get("ID")
+                old_bezeichnung = record.get("Bezeichnung")
+                new_bezeichnung = f"Bezeichnung {record_id}"
+
+                if dry_run:
+                    print(f"  ID {record_id}: Bezeichnung '{old_bezeichnung}' -> '{new_bezeichnung}'")
+                else:
+                    update_cursor.execute(
+                        "UPDATE K_Datenschutz SET Bezeichnung = %s WHERE ID = %s",
+                        (new_bezeichnung, record_id),
+                    )
+
+                updated_count += 1
+
+            if not dry_run:
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Bezeichnung for {updated_count} records in K_Datenschutz table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def anonymize_allg_adr_ansprechpartner(self, dry_run=False):
         """Anonymize AllgAdrAnsprechpartner table with random names, emails, and phone numbers."""
         if not self.connection:
@@ -4128,8 +4258,10 @@ def main():
                 db_anonymizer.anonymize_eigene_schule_abteilungen(dry_run=args.dry_run)
                 db_anonymizer.anonymize_eigene_schule_logo(dry_run=args.dry_run)
                 db_anonymizer.delete_eigene_schule_texte(dry_run=args.dry_run)
+                db_anonymizer.anonymize_benutzergruppen(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_telefonart(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_kindergarten(dry_run=args.dry_run)
+                db_anonymizer.anonymize_k_datenschutz(dry_run=args.dry_run)
                 db_anonymizer.anonymize_personengruppen(dry_run=args.dry_run)
                 db_anonymizer.reset_schule_credentials(dry_run=args.dry_run)
                 db_anonymizer.delete_and_reload_k_schule(dry_run=args.dry_run)

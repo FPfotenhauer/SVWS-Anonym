@@ -8,6 +8,18 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 
 *SVWS-Anonym is a tool for anonymizing personal data in SVWS database exports. It replaces real names with randomly generated German names from the [JSON-Namen repository](https://github.com/FPfotenhauer/JSON-Namen).*
 
+## Aktuelle Updates (Recent Updates)
+
+**Version mit erweiterten Anonymisierungsfunktionen:**
+- ✅ Benutzergruppen-Anonymisierung mit geschützten Werten (Administrator, Schulleitung, Lehrer, Sekretariat)
+- ✅ Telefonabschnitt-Anonymisierung in Schueler-Tabelle (Telefon und Fax Felder)
+- ✅ SchuelerEinzelleistungen-Bemerkung-Anonymisierung
+- ✅ Schueler_AllgAdr Ausbilder-Anonymisierung
+- ✅ SchuelerBKAbschluss ThemaAbschlussarbeit-Anonymisierung
+- ✅ SchuelerListe Erzeuger-Aktualisierung (auf ID=1 für Admin-Benutzer)
+
+*Extended anonymization functions including Benutzergruppen with protected values, phone number anonymization in Schueler table, SchuelerEinzelleistungen remarks anonymization, and SchuelerListe creator field update.*
+
 ## Features
 
 - Anonymisierung von Vornamen (First name anonymization)
@@ -25,8 +37,10 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - SMTP-Konfigurations-Anonymisierung
 - Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
 - EigeneSchule_Texte-Löschung (vollständige Bereinigung)
+- Benutzergruppen-Anonymisierung (Bezeichnung zu "Bezeichnung " + ID, schützt Standard-Werte)
 - K_TelefonArt-Anonymisierung (Bezeichnung zu "Telefonart " + ID, schützt Standard-Werte)
 - K_Kindergarten-Anonymisierung (Bezeichnung, PLZ/Ort aus K_Ort, Straßennamen, Kontaktfelder)
+- K_Datenschutz-Anonymisierung (Bezeichnung zu "Bezeichnung " + ID, schützt "Verwendung Foto")
 - Personengruppen-Anonymisierung (Gruppenname, Zusatzinfo, SammelEmail)
 - SchuleCredentials-Reset (generiert neue RSA 2048-bit Schlüsselpaare und AES 256-bit Schlüssel)
 - Lernplattformen-Anonymisierung (Bezeichnung und Konfiguration)
@@ -164,6 +178,10 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **EigeneSchule_Texte Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
 
+**Benutzergruppen Tabelle:**
+- `Bezeichnung` wird auf "Bezeichnung " + ID gesetzt (z.B. "Bezeichnung 1", "Bezeichnung 5")
+- Geschützte Werte werden NICHT geändert: Administrator, Schulleitung, Lehrer, Sekretariat
+
 **K_TelefonArt Tabelle:**
 - `Bezeichnung` wird auf "Telefonart " + ID gesetzt (z.B. "Telefonart 5", "Telefonart 22")
 - Geschützte Werte werden NICHT geändert: Eltern, Mutter, Vater, Notfallnummer, Festnetz, Handynummer, Mobilnummer, Großeltern
@@ -174,6 +192,10 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Ort` wird durch eine zufällige Ortsbezeichnung (K_Ort.Bezeichnung) ersetzt
 - `Strassenname` wird durch einen zufälligen Straßennamen aus Strassen.csv ersetzt
 - Bereinigung: `HausNrZusatz`, `Tel`, `Email`, `Bemerkung` ← NULL
+
+**K_Datenschutz Tabelle:**
+- `Bezeichnung` wird auf "Bezeichnung " + ID gesetzt (z.B. "Bezeichnung 1", "Bezeichnung 3")
+- Geschützte Werte werden NICHT geändert: "Verwendung Foto"
 
 **Personengruppen Tabelle:**
 - `Gruppenname` wird auf "Gruppe " + ID gesetzt (z.B. "Gruppe 1", "Gruppe 2")
@@ -323,6 +345,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 **Personengruppen_Personen Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**SchuelerListe Tabelle:**
+- `Erzeuger` wird auf ID=1 (Admin-Benutzer) gesetzt (nur für Einträge mit non-NULL Werten)
 
 **Allgemeine Verwaltungs-Tabellen:**
 - `Schil_Verwaltung`: Alle Einträge werden gelöscht
