@@ -2325,6 +2325,132 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_k_fahrschuelerart(self, dry_run=False):
+        """Update K_FahrschuelerArt.Bezeichnung with 'Fahrschülerart '+ID for all non-NULL values."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_FahrschuelerArt'")
+            if not cursor.fetchone():
+                print("\nSkipping K_FahrschuelerArt: table not found")
+                return 0
+
+            # Get records where Bezeichnung IS NOT NULL
+            query = "SELECT ID, Bezeichnung FROM K_FahrschuelerArt WHERE Bezeichnung IS NOT NULL"
+            cursor.execute(query)
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo K_FahrschuelerArt records found with non-NULL Bezeichnung")
+                return 0
+
+            print(f"\nFound {len(records)} records in K_FahrschuelerArt table with non-NULL Bezeichnung")
+
+            if dry_run:
+                print("\nDRY RUN - K_FahrschuelerArt Bezeichnung update:")
+
+            updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+
+            for record in records:
+                record_id = record.get("ID")
+                old_bezeichnung = record.get("Bezeichnung")
+                new_bezeichnung = f"Fahrschülerart {record_id}"
+
+                if dry_run:
+                    print(f"  ID {record_id}: Bezeichnung '{old_bezeichnung}' -> '{new_bezeichnung}'")
+                else:
+                    update_cursor.execute(
+                        "UPDATE K_FahrschuelerArt SET Bezeichnung = %s WHERE ID = %s",
+                        (new_bezeichnung, record_id),
+                    )
+
+                updated_count += 1
+
+            if not dry_run:
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Bezeichnung for {updated_count} records in K_FahrschuelerArt table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def anonymize_k_haltestelle(self, dry_run=False):
+        """Update K_Haltestelle.Bezeichnung with 'Haltestelle '+ID for all non-NULL values."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_Haltestelle'")
+            if not cursor.fetchone():
+                print("\nSkipping K_Haltestelle: table not found")
+                return 0
+
+            # Get records where Bezeichnung IS NOT NULL
+            query = "SELECT ID, Bezeichnung FROM K_Haltestelle WHERE Bezeichnung IS NOT NULL"
+            cursor.execute(query)
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo K_Haltestelle records found with non-NULL Bezeichnung")
+                return 0
+
+            print(f"\nFound {len(records)} records in K_Haltestelle table with non-NULL Bezeichnung")
+
+            if dry_run:
+                print("\nDRY RUN - K_Haltestelle Bezeichnung update:")
+
+            updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+
+            for record in records:
+                record_id = record.get("ID")
+                old_bezeichnung = record.get("Bezeichnung")
+                new_bezeichnung = f"Haltestelle {record_id}"
+
+                if dry_run:
+                    print(f"  ID {record_id}: Bezeichnung '{old_bezeichnung}' -> '{new_bezeichnung}'")
+                else:
+                    update_cursor.execute(
+                        "UPDATE K_Haltestelle SET Bezeichnung = %s WHERE ID = %s",
+                        (new_bezeichnung, record_id),
+                    )
+
+                updated_count += 1
+
+            if not dry_run:
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Bezeichnung for {updated_count} records in K_Haltestelle table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def anonymize_allg_adr_ansprechpartner(self, dry_run=False):
         """Anonymize AllgAdrAnsprechpartner table with random names, emails, and phone numbers."""
         if not self.connection:
@@ -4398,6 +4524,8 @@ def main():
                 db_anonymizer.anonymize_k_datenschutz(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_erzieherart(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_entlassgrund(dry_run=args.dry_run)
+                db_anonymizer.anonymize_k_fahrschuelerart(dry_run=args.dry_run)
+                db_anonymizer.anonymize_k_haltestelle(dry_run=args.dry_run)
                 db_anonymizer.anonymize_personengruppen(dry_run=args.dry_run)
                 db_anonymizer.reset_schule_credentials(dry_run=args.dry_run)
                 db_anonymizer.delete_and_reload_k_schule(dry_run=args.dry_run)
