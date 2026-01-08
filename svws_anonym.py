@@ -508,6 +508,118 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_katalog_floskeln(self, dry_run=False):
+        """Set Katalog_Floskeln.Text to 'Der Schüler $Vorname$ erhält den Floskeltext Nummer  ' + ID for all rows."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'Katalog_Floskeln'")
+            if not cursor.fetchone():
+                print("\nSkipping Katalog_Floskeln: table not found")
+                return 0
+
+            # Read current rows for preview/count
+            cursor.execute("SELECT ID, Text FROM Katalog_Floskeln")
+            records = cursor.fetchall()
+            total_rows = len(records)
+
+            if total_rows == 0:
+                print("\nNo records found in Katalog_Floskeln table")
+                return 0
+
+            print(f"\nFound {total_rows} records in Katalog_Floskeln table")
+
+            if dry_run:
+                print("\nDRY RUN - Katalog_Floskeln Text update:")
+                preview = records[:10]
+                for rec in preview:
+                    rid = rec.get("ID")
+                    old = rec.get("Text")
+                    new_val = f"Der Schüler $Vorname$ erhält den Floskeltext Nummer  {rid}"
+                    print(f"  ID {rid}: Text '{old}' -> '{new_val}'")
+                if total_rows > len(preview):
+                    print(f"  ... and {total_rows - len(preview)} more rows")
+                print(f"\nDry run complete. {total_rows} records would be updated")
+            else:
+                update_cursor = self.connection.cursor()
+                update_cursor.execute(
+                    "UPDATE Katalog_Floskeln SET Text = CONCAT('Der Schüler $Vorname$ erhält den Floskeltext Nummer  ', ID)"
+                )
+                affected = update_cursor.rowcount
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Text for {affected} records in Katalog_Floskeln table")
+
+            return total_rows
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def anonymize_k_ankreuzfloskeln(self, dry_run=False):
+        """Set K_Ankreuzfloskeln.Floskeltext to '- Floskeltext für das Zeugnis ' + ID for all rows."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_Ankreuzfloskeln'")
+            if not cursor.fetchone():
+                print("\nSkipping K_Ankreuzfloskeln: table not found")
+                return 0
+
+            # Count rows and preview records
+            cursor.execute("SELECT ID, Floskeltext FROM K_Ankreuzfloskeln")
+            records = cursor.fetchall()
+            total_rows = len(records)
+
+            if total_rows == 0:
+                print("\nNo records found in K_Ankreuzfloskeln table")
+                return 0
+
+            print(f"\nFound {total_rows} records in K_Ankreuzfloskeln table")
+
+            if dry_run:
+                print("\nDRY RUN - K_Ankreuzfloskeln Floskeltext update:")
+                preview = records[:10]
+                for rec in preview:
+                    rid = rec.get("ID")
+                    old = rec.get("Floskeltext")
+                    new_val = f"- Floskeltext für das Zeugnis {rid}"
+                    print(f"  ID {rid}: Floskeltext '{old}' -> '{new_val}'")
+                if total_rows > len(preview):
+                    print(f"  ... and {total_rows - len(preview)} more rows")
+                print(f"\nDry run complete. {total_rows} records would be updated")
+            else:
+                update_cursor = self.connection.cursor()
+                update_cursor.execute(
+                    "UPDATE K_Ankreuzfloskeln SET Floskeltext = CONCAT('- Floskeltext für das Zeugnis ', ID)"
+                )
+                affected = update_cursor.rowcount
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Floskeltext for {affected} records in K_Ankreuzfloskeln table")
+
+            return total_rows
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def anonymize_schueler(self, dry_run=False):
         """Anonymize the Schueler table."""
         if not self.connection or not self.connection.is_connected():
@@ -2568,6 +2680,68 @@ class DatabaseAnonymizer:
                 print(f"\nDry run complete. {updated_count} records would be updated")
 
             return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def anonymize_k_ankreuzdaten(self, dry_run=False):
+        """Set all K_Ankreuzdaten columns to NULL except the ID column."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_Ankreuzdaten'")
+            if not cursor.fetchone():
+                print("\nSkipping K_Ankreuzdaten: table not found")
+                return 0
+
+            # Get list of columns and exclude ID
+            cursor.execute("SHOW COLUMNS FROM K_Ankreuzdaten")
+            columns_info = cursor.fetchall()
+            if not columns_info:
+                print("\nSkipping K_Ankreuzdaten: no columns found")
+                return 0
+
+            all_columns = [col["Field"] if isinstance(col, dict) else col[0] for col in columns_info]
+            non_id_columns = [c for c in all_columns if c.lower() != "id"]
+
+            if not non_id_columns:
+                print("\nSkipping K_Ankreuzdaten: no updatable columns (only ID present)")
+                return 0
+
+            # Count rows
+            cursor.execute("SELECT COUNT(*) AS cnt FROM K_Ankreuzdaten")
+            row = cursor.fetchone()
+            total_rows = row.get("cnt") if isinstance(row, dict) else row[0]
+            if total_rows == 0:
+                print("\nNo records found in K_Ankreuzdaten table")
+                return 0
+
+            print(f"\nFound {total_rows} records in K_Ankreuzdaten table")
+
+            set_clause = ", ".join([f"{c} = NULL" for c in non_id_columns])
+
+            if dry_run:
+                print("\nDRY RUN - K_Ankreuzdaten clear:")
+                print(f"  Columns to NULL (excluding ID): {', '.join(non_id_columns)}")
+                print(f"  Rows affected: {total_rows}")
+            else:
+                update_cursor = self.connection.cursor()
+                update_cursor.execute(f"UPDATE K_Ankreuzdaten SET {set_clause}")
+                affected = update_cursor.rowcount
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully set NULL for {affected} records in K_Ankreuzdaten (excluding ID)")
+
+            return total_rows
 
         except mysql.connector.Error as e:
             if not dry_run:
@@ -4654,6 +4828,9 @@ def main():
                 db_anonymizer.anonymize_k_haltestelle(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_vermerkart(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_schulfunktionen(dry_run=args.dry_run)
+                db_anonymizer.anonymize_k_ankreuzdaten(dry_run=args.dry_run)
+                db_anonymizer.anonymize_k_ankreuzfloskeln(dry_run=args.dry_run)
+                db_anonymizer.anonymize_katalog_floskeln(dry_run=args.dry_run)
                 db_anonymizer.anonymize_personengruppen(dry_run=args.dry_run)
                 db_anonymizer.reset_schule_credentials(dry_run=args.dry_run)
                 db_anonymizer.delete_and_reload_k_schule(dry_run=args.dry_run)

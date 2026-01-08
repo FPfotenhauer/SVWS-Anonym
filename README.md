@@ -47,6 +47,9 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - K_Haltestelle-Anonymisierung (Bezeichnung zu "Haltestelle " + ID)
 - K_Vermerkart-Anonymisierung (Bezeichnung zu "Vermerk " + ID)
 - K_Schulfunktionen-Anonymisierung (Bezeichnung zu "Schulfunktion " + ID, schützt "Schulleitung")
+- K_Ankreuzdaten-Bereinigung (setzt alle Felder außer ID auf NULL)
+- K_Ankreuzfloskeln-Anonymisierung (setzt `Floskeltext` auf "- Floskeltext für das Zeugnis " + ID)
+- Katalog_Floskeln-Anonymisierung (setzt `Text` auf "Der Schüler $Vorname$ erhält den Floskeltext Nummer  " + ID)
 - Personengruppen-Anonymisierung (Gruppenname, Zusatzinfo, SammelEmail)
 - SchuleCredentials-Reset (generiert neue RSA 2048-bit Schlüsselpaare und AES 256-bit Schlüssel)
 - Lernplattformen-Anonymisierung (Bezeichnung und Konfiguration)
@@ -223,6 +226,15 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **K_Schulfunktionen Tabelle:**
 - `Bezeichnung` wird auf "Schulfunktion " + ID gesetzt (z.B. "Schulfunktion 1", "Schulfunktion 5")
 - Geschützte Werte werden NICHT geändert: Schulleitung
+
+**K_Ankreuzdaten Tabelle:**
+- Alle Spalten außer `ID` werden auf NULL gesetzt (vollständige Bereinigung der Inhalte)
+
+**K_Ankreuzfloskeln Tabelle:**
+- `Floskeltext` wird auf "- Floskeltext für das Zeugnis " + ID gesetzt (z.B. "- Floskeltext für das Zeugnis 1")
+
+**Katalog_Floskeln Tabelle:**
+- `Text` wird auf "Der Schüler $Vorname$ erhält den Floskeltext Nummer  " + ID gesetzt (z.B. "Der Schüler $Vorname$ erhält den Floskeltext Nummer  12")
 
 **Personengruppen Tabelle:**
 - `Gruppenname` wird auf "Gruppe " + ID gesetzt (z.B. "Gruppe 1", "Gruppe 2")
