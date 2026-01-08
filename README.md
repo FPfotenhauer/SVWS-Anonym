@@ -8,6 +8,18 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 
 *SVWS-Anonym is a tool for anonymizing personal data in SVWS database exports. It replaces real names with randomly generated German names from the [JSON-Namen repository](https://github.com/FPfotenhauer/JSON-Namen).*
 
+## Aktuelle Updates (Recent Updates)
+
+**Version mit erweiterten Anonymisierungsfunktionen:**
+- ✅ Benutzergruppen-Anonymisierung mit geschützten Werten (Administrator, Schulleitung, Lehrer, Sekretariat)
+- ✅ Telefonabschnitt-Anonymisierung in Schueler-Tabelle (Telefon und Fax Felder)
+- ✅ SchuelerEinzelleistungen-Bemerkung-Anonymisierung
+- ✅ Schueler_AllgAdr Ausbilder-Anonymisierung
+- ✅ SchuelerBKAbschluss ThemaAbschlussarbeit-Anonymisierung
+- ✅ SchuelerListe Erzeuger-Aktualisierung (auf ID=1 für Admin-Benutzer)
+
+*Extended anonymization functions including Benutzergruppen with protected values, phone number anonymization in Schueler table, SchuelerEinzelleistungen remarks anonymization, and SchuelerListe creator field update.*
+
 ## Features
 
 - Anonymisierung von Vornamen (First name anonymization)
@@ -25,8 +37,17 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - SMTP-Konfigurations-Anonymisierung
 - Logo-Ersetzung aus PNG-Datei mit Base64-Kodierung
 - EigeneSchule_Texte-Löschung (vollständige Bereinigung)
+- Benutzergruppen-Anonymisierung (Bezeichnung zu "Bezeichnung " + ID, schützt Standard-Werte)
 - K_TelefonArt-Anonymisierung (Bezeichnung zu "Telefonart " + ID, schützt Standard-Werte)
 - K_Kindergarten-Anonymisierung (Bezeichnung, PLZ/Ort aus K_Ort, Straßennamen, Kontaktfelder)
+- K_Datenschutz-Anonymisierung (Bezeichnung zu "Bezeichnung " + ID, schützt "Verwendung Foto")
+- K_ErzieherArt-Anonymisierung (Bezeichnung zu "Erzieherart " + ID, schützt Standard-Werte)
+- K_EntlassGrund-Anonymisierung (Bezeichnung zu "Entlassgrund " + ID, schützt Standard-Werte)
+- K_FahrschuelerArt-Anonymisierung (Bezeichnung zu "Fahrschülerart " + ID)
+- K_Haltestelle-Anonymisierung (Bezeichnung zu "Haltestelle " + ID)
+- K_Vermerkart-Anonymisierung (Bezeichnung zu "Vermerk " + ID)
+- K_Schulfunktionen-Anonymisierung (Bezeichnung zu "Schulfunktion " + ID, schützt "Schulleitung")
+- Personengruppen-Anonymisierung (Gruppenname, Zusatzinfo, SammelEmail)
 - SchuleCredentials-Reset (generiert neue RSA 2048-bit Schlüsselpaare und AES 256-bit Schlüssel)
 - Lernplattformen-Anonymisierung (Bezeichnung und Konfiguration)
 - Lernplattform-Anmeldedaten-Anonymisierung (Lehrer und Schüler mit Initialkennwort und Sicherheitsfeld-Bereinigung)
@@ -48,6 +69,7 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - K_AllgAdresse-Anonymisierung (allgemeine Adressen mit Namen, Adressen, Kontaktdaten)
 - Schueler_AllgAdr Ausbilder-Anonymisierung (Ausbildername mit zufälligen Nachnamen ersetzen)
 - SchuelerBKAbschluss ThemaAbschlussarbeit-Anonymisierung (Thema mit standardisiertem Text ersetzen)
+- SchuelerEinzelleistungen Bemerkung-Anonymisierung (Bemerkung mit standardisiertem Text ersetzen)
 - SchuelerFotos-Löschung (vollständige Bereinigung)
 - SchuelerFoerderempfehlungen-Löschung (vollständige Bereinigung)
 - LehrerFotos-Löschung (vollständige Bereinigung)
@@ -112,10 +134,16 @@ chmod +x svws_anonym.py
 
 ## Verwendung (Usage)
 
+### Anzeige aller möglichen Parameter (Show Parameters)
+
+```bash
+python svws_anonym.py --help
+```
+
 ### Basis-Verwendung (Basic Usage)
 
 ```bash
-python svws_anonym.py
+python svws_anonym.py --dry-run
 ```
 
 Zeigt Beispiel-Anonymisierungen an, ohne die Datenbank zu ändern.
@@ -156,6 +184,10 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **EigeneSchule_Texte Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
 
+**Benutzergruppen Tabelle:**
+- `Bezeichnung` wird auf "Bezeichnung " + ID gesetzt (z.B. "Bezeichnung 1", "Bezeichnung 5")
+- Geschützte Werte werden NICHT geändert: Administrator, Schulleitung, Lehrer, Sekretariat
+
 **K_TelefonArt Tabelle:**
 - `Bezeichnung` wird auf "Telefonart " + ID gesetzt (z.B. "Telefonart 5", "Telefonart 22")
 - Geschützte Werte werden NICHT geändert: Eltern, Mutter, Vater, Notfallnummer, Festnetz, Handynummer, Mobilnummer, Großeltern
@@ -166,6 +198,36 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Ort` wird durch eine zufällige Ortsbezeichnung (K_Ort.Bezeichnung) ersetzt
 - `Strassenname` wird durch einen zufälligen Straßennamen aus Strassen.csv ersetzt
 - Bereinigung: `HausNrZusatz`, `Tel`, `Email`, `Bemerkung` ← NULL
+
+**K_Datenschutz Tabelle:**
+- `Bezeichnung` wird auf "Bezeichnung " + ID gesetzt (z.B. "Bezeichnung 1", "Bezeichnung 3")
+- Geschützte Werte werden NICHT geändert: "Verwendung Foto"
+
+**K_ErzieherArt Tabelle:**
+- `Bezeichnung` wird auf "Erzieherart " + ID gesetzt (z.B. "Erzieherart 1", "Erzieherart 5")
+- Geschützte Werte werden NICHT geändert: Vater, Mutter, Schüler ist volljährig, Schülerin ist volljährig, Eltern, Sonstige
+
+**K_EntlassGrund Tabelle:**
+- `Bezeichnung` wird auf "Entlassgrund " + ID gesetzt (z.B. "Entlassgrund 1", "Entlassgrund 5")
+- Geschützte Werte werden NICHT geändert: Schulpflicht endet, Normaler Abschluss, Ohne Angabe, Wechsel zu anderer Schule
+
+**K_FahrschuelerArt Tabelle:**
+- `Bezeichnung` wird auf "Fahrschülerart " + ID gesetzt (z.B. "Fahrschülerart 1", "Fahrschülerart 2")
+
+**K_Haltestelle Tabelle:**
+- `Bezeichnung` wird auf "Haltestelle " + ID gesetzt (z.B. "Haltestelle 1", "Haltestelle 5")
+
+**K_Vermerkart Tabelle:**
+- `Bezeichnung` wird auf "Vermerk " + ID gesetzt (z.B. "Vermerk 1", "Vermerk 3")
+
+**K_Schulfunktionen Tabelle:**
+- `Bezeichnung` wird auf "Schulfunktion " + ID gesetzt (z.B. "Schulfunktion 1", "Schulfunktion 5")
+- Geschützte Werte werden NICHT geändert: Schulleitung
+
+**Personengruppen Tabelle:**
+- `Gruppenname` wird auf "Gruppe " + ID gesetzt (z.B. "Gruppe 1", "Gruppe 2")
+- `Zusatzinfo` wird auf "Info" gesetzt
+- `SammelEmail` wird auf "gruppe" + ID + "@gruppe.example.com" gesetzt (z.B. "gruppe1@gruppe.example.com")
 
 **SchuleCredentials Tabelle:**
 - Alle Einträge werden gelöscht
@@ -233,6 +295,8 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Name` wird durch einen zufälligen Nachnamen ersetzt
 - `Geburtsdatum` wird randomisiert (Tag wird zufällig geändert, Monat und Jahr bleiben erhalten)
 - `Geburtsort` wird auf "Testort" gesetzt (wenn nicht NULL, sonst NULL)
+- `Telefon` wird auf "012345-" + 6 zufällige Ziffern gesetzt (wenn nicht NULL, z.B. "012345-123456")
+- `Fax` wird auf "012345-" + 6 zufällige Ziffern gesetzt (wenn nicht NULL, z.B. "012345-654321")
 - Adressdaten (`Ort_ID`, `Strassenname`, `HausNr`) werden aus CSV-Daten zugewiesen
  - Transportfelder: `Idext` ← NULL, `Fahrschueler_ID` ← NULL, `Haltestelle_ID` ← NULL
  - Änderungsmarker: `ModifiziertVon` ← "Admin"
@@ -245,7 +309,7 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `AllgAdrOrt_ID` wird auf eine zufällig existierende Ort-ID aus K_Ort gesetzt
 - `AllgAdrTelefon1` wird auf "01234-" + 6 zufällige Ziffern gesetzt (z.B. "01234-567890")
 - `AllgAdrTelefon2`, `AllgAdrFax` ← NULL
-- `AllgAdrEmail` wird auf `AllgAdrName1` ohne Leerzeichen + "@betrieb.example.com" gesetzt (z.B. "MülleundSchmidt@betrieb.example.com")
+- `AllgAdrEmail` wird auf `AllgAdrName1` ohne Leerzeichen + "@betrieb.example.com" gesetzt (z.B. "MuellerundSchmidt@betrieb.example.com")
 - `AllgAdrBemerkungen`, `AllgAdrZusatz1`, `AllgAdrZusatz2` ← NULL
 
 **AllgAdrAnsprechpartner Tabelle:**
@@ -295,6 +359,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **SchuelerBKAbschluss Tabelle:**
 - `ThemaAbschlussarbeit` wird auf "Thema der Arbeit" gesetzt (nur für Einträge mit non-NULL Werten)
 
+**SchuelerEinzelleistungen Tabelle:**
+- `Bemerkung` wird auf "Bemerkung" gesetzt (nur für Einträge mit non-NULL Werten)
+
 **SchuelerAbgaenge Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
 
@@ -305,6 +372,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 **Personengruppen_Personen Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)
+
+**SchuelerListe Tabelle:**
+- `Erzeuger` wird auf ID=1 (Admin-Benutzer) gesetzt (nur für Einträge mit non-NULL Werten)
 
 **Allgemeine Verwaltungs-Tabellen:**
 - `Schil_Verwaltung`: Alle Einträge werden gelöscht
@@ -323,23 +393,7 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `BenutzerAllgemein`: Alle Einträge werden gelöscht, Administrator wird neu angelegt (ID=1, Anzeigename=Administrator, CredentialID=1)
 - `Credentials`: Alle Einträge werden gelöscht, Admin-Credential wird neu angelegt (ID=1, Benutzername=Admin)
 
-*General administrative tables: deletes all entries from Schil_Verwaltung, Client_Konfiguration_Global, Client_Konfiguration_Benutzer, Wiedervorlage, ZuordnungenReportvorlagen, BenutzerEmail, ImpExp_EigeneImporte, ImpExp_EigeneImporte_Felder, ImpExp_EigeneImporte_Tabellen, SchuleOAuthSecrets, Logins, and TextExportVorlagen. Recreates admin user in Benutzer, BenutzerAllgemein, and Credentials tables.*
 
-```
-- `Vorname` wird durch einen zufälligen Vornamen ersetzt (geschlechtsspezifisch)
-- `Name` wird durch einen zufälligen Nachnamen ersetzt
-- `Zusatz` (zusätzliche Vornamen) wird mit zufälligen Namen des gleichen Geschlechts ersetzt, wobei der neue `Vorname` enthalten sein muss
-- `Geburtsname` wird durch einen zufälligen Nachnamen ersetzt (nur wenn nicht NULL)
-- `Email` und weitere Kontaktdaten werden anonymisiert
-- Adressdaten werden ähnlich wie bei K_Lehrer behandelt
-
-
-
-**Geschlecht-Werte:** 3 = männlich, 4 = weiblich, 5/6 = neutral (zufälliges Geschlecht)
-
-Das Programm fragt nach Datenbankname, Benutzername und Passwort für die Datenbankverbindung.
-
-*Connects to the database and anonymizes the following tables: EigeneSchule (school information with standardized values), EigeneSchule_Email (SMTP configuration), EigeneSchule_Logo (base64 logo from PNG file), K_Lehrer (teachers with comprehensive field anonymization including names, emails, phones, birthdate randomization, IdentNr1 generation, addresses from CSV, and 4-character unique `LIDKrz`), CredentialsLernplattformen (username format for teachers and students with duplicate handling), LehrerAbschnittsdaten (StammschulNr), Schueler (students with similar comprehensive anonymization), SchuelerErzAdr (names, first names, address normalization, email and misc clears), and SchuelerVermerke (complete deletion). The program prompts for database name, username and password.*
 
 ### Dry-Run Modus (Dry-Run Mode)
 
@@ -355,34 +409,6 @@ Zeigt an, welche Änderungen vorgenommen würden, ohne die Datenbank tatsächlic
 
 ```bash
 python svws_anonym.py --config /path/to/config.json --anonymize
-```
-
-### Programmatische Verwendung (Programmatic Usage)
-
-```python
-from svws_anonym import NameAnonymizer, DatabaseConfig
-
-# Datenbankkonfiguration laden
-db_config = DatabaseConfig()  # Lädt config.json aus dem aktuellen Verzeichnis
-# oder mit benutzerdefiniertem Pfad:
-# db_config = DatabaseConfig("/path/to/config.json")
-
-# Verbindungsparameter abrufen
-conn_params = db_config.get_connection_params()
-print(f"Verbinde mit Datenbank: {db_config.database}")
-
-# Anonymizer initialisieren
-anonymizer = NameAnonymizer()
-
-# Vornamen anonymisieren
-new_firstname_m = anonymizer.anonymize_firstname("Max", gender='m')
-new_firstname_w = anonymizer.anonymize_firstname("Erika", gender='w')
-
-# Nachnamen anonymisieren
-new_lastname = anonymizer.anonymize_lastname("Mustermann")
-
-# Vollständige Namen anonymisieren
-firstname, lastname = anonymizer.anonymize_fullname("Max", "Mustermann", gender='m')
 ```
 
 ## Konfigurationsdatei (Configuration File)
