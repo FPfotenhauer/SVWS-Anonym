@@ -49,6 +49,7 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - K_AllgAdresse-Anonymisierung (allgemeine Adressen mit Namen, Adressen, Kontaktdaten)
 - Schueler_AllgAdr Ausbilder-Anonymisierung (Ausbildername mit zufälligen Nachnamen ersetzen)
 - SchuelerBKAbschluss ThemaAbschlussarbeit-Anonymisierung (Thema mit standardisiertem Text ersetzen)
+- SchuelerEinzelleistungen Bemerkung-Anonymisierung (Bemerkung mit standardisiertem Text ersetzen)
 - SchuelerFotos-Löschung (vollständige Bereinigung)
 - SchuelerFoerderempfehlungen-Löschung (vollständige Bereinigung)
 - LehrerFotos-Löschung (vollständige Bereinigung)
@@ -308,6 +309,9 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 **SchuelerBKAbschluss Tabelle:**
 - `ThemaAbschlussarbeit` wird auf "Thema der Arbeit" gesetzt (nur für Einträge mit non-NULL Werten)
+
+**SchuelerEinzelleistungen Tabelle:**
+- `Bemerkung` wird auf "Bemerkung" gesetzt (nur für Einträge mit non-NULL Werten)
 
 **SchuelerAbgaenge Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)

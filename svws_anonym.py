@@ -2787,6 +2787,60 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def update_schueler_einzelleistungen_bemerkungen(self, dry_run=False):
+        """Replace SchuelerEinzelleistungen.Bemerkung with 'Bemerkung'."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'SchuelerEinzelleistungen'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuelerEinzelleistungen: table not found")
+                return 0
+
+            # Check if Bemerkung column exists
+            cursor.execute("SHOW COLUMNS FROM SchuelerEinzelleistungen LIKE 'Bemerkung'")
+            if not cursor.fetchone():
+                print("\nSkipping SchuelerEinzelleistungen: column Bemerkung not found")
+                return 0
+
+            # Count records where Bemerkung IS NOT NULL
+            cursor.execute("SELECT COUNT(*) as count FROM SchuelerEinzelleistungen WHERE Bemerkung IS NOT NULL")
+            result = cursor.fetchone()
+            record_count = result.get("count", 0) if result else 0
+
+            if record_count == 0:
+                print("\nNo SchuelerEinzelleistungen records found with non-NULL Bemerkung")
+                return 0
+
+            print(f"\nFound {record_count} records in SchuelerEinzelleistungen table with non-NULL Bemerkung")
+
+            if dry_run:
+                print("\nDRY RUN - SchuelerEinzelleistungen Bemerkung update:")
+                print(f"  Would set Bemerkung to 'Bemerkung' for {record_count} records")
+            else:
+                update_cursor = self.connection.cursor()
+                update_cursor.execute(
+                    "UPDATE SchuelerEinzelleistungen SET Bemerkung = %s WHERE Bemerkung IS NOT NULL",
+                    ("Bemerkung",),
+                )
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Bemerkung for {record_count} records in SchuelerEinzelleistungen table")
+
+            return record_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def update_schueler_liste_erzeuger(self, dry_run=False):
         """Set SchuelerListe.Erzeuger to 1 where not NULL."""
         if not self.connection:
@@ -4114,6 +4168,7 @@ def main():
                 db_anonymizer.update_schueler_lsschulnummer(dry_run=args.dry_run)
                 db_anonymizer.update_schueler_allgadr_ausbilder(dry_run=args.dry_run)
                 db_anonymizer.update_schueler_bk_abschluss_thema(dry_run=args.dry_run)
+                db_anonymizer.update_schueler_einzelleistungen_bemerkungen(dry_run=args.dry_run)
                 
                 # K_AllgAdresse operations
                 db_anonymizer.anonymize_k_allg_adresse(dry_run=args.dry_run)
