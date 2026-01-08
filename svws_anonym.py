@@ -2451,6 +2451,132 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_k_vermerkart(self, dry_run=False):
+        """Update K_Vermerkart.Bezeichnung with 'Vermerk '+ID for all non-NULL values."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_Vermerkart'")
+            if not cursor.fetchone():
+                print("\nSkipping K_Vermerkart: table not found")
+                return 0
+
+            # Get records where Bezeichnung IS NOT NULL
+            query = "SELECT ID, Bezeichnung FROM K_Vermerkart WHERE Bezeichnung IS NOT NULL"
+            cursor.execute(query)
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo K_Vermerkart records found with non-NULL Bezeichnung")
+                return 0
+
+            print(f"\nFound {len(records)} records in K_Vermerkart table with non-NULL Bezeichnung")
+
+            if dry_run:
+                print("\nDRY RUN - K_Vermerkart Bezeichnung update:")
+
+            updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+
+            for record in records:
+                record_id = record.get("ID")
+                old_bezeichnung = record.get("Bezeichnung")
+                new_bezeichnung = f"Vermerk {record_id}"
+
+                if dry_run:
+                    print(f"  ID {record_id}: Bezeichnung '{old_bezeichnung}' -> '{new_bezeichnung}'")
+                else:
+                    update_cursor.execute(
+                        "UPDATE K_Vermerkart SET Bezeichnung = %s WHERE ID = %s",
+                        (new_bezeichnung, record_id),
+                    )
+
+                updated_count += 1
+
+            if not dry_run:
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Bezeichnung for {updated_count} records in K_Vermerkart table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def anonymize_k_schulfunktionen(self, dry_run=False):
+        """Update K_Schulfunktionen.Bezeichnung with 'Schulfunktion '+ID, excluding 'Schulleitung'."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_Schulfunktionen'")
+            if not cursor.fetchone():
+                print("\nSkipping K_Schulfunktionen: table not found")
+                return 0
+
+            # Get records where Bezeichnung IS NOT NULL and not 'Schulleitung'
+            query = "SELECT ID, Bezeichnung FROM K_Schulfunktionen WHERE Bezeichnung IS NOT NULL AND Bezeichnung != %s"
+            cursor.execute(query, ("Schulleitung",))
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo K_Schulfunktionen records found with non-NULL Bezeichnung (excluding 'Schulleitung')")
+                return 0
+
+            print(f"\nFound {len(records)} records in K_Schulfunktionen table with non-NULL Bezeichnung (excluding 'Schulleitung')")
+
+            if dry_run:
+                print("\nDRY RUN - K_Schulfunktionen Bezeichnung update:")
+
+            updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+
+            for record in records:
+                record_id = record.get("ID")
+                old_bezeichnung = record.get("Bezeichnung")
+                new_bezeichnung = f"Schulfunktion {record_id}"
+
+                if dry_run:
+                    print(f"  ID {record_id}: Bezeichnung '{old_bezeichnung}' -> '{new_bezeichnung}'")
+                else:
+                    update_cursor.execute(
+                        "UPDATE K_Schulfunktionen SET Bezeichnung = %s WHERE ID = %s",
+                        (new_bezeichnung, record_id),
+                    )
+
+                updated_count += 1
+
+            if not dry_run:
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Bezeichnung for {updated_count} records in K_Schulfunktionen table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def anonymize_allg_adr_ansprechpartner(self, dry_run=False):
         """Anonymize AllgAdrAnsprechpartner table with random names, emails, and phone numbers."""
         if not self.connection:
@@ -4526,6 +4652,8 @@ def main():
                 db_anonymizer.anonymize_k_entlassgrund(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_fahrschuelerart(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_haltestelle(dry_run=args.dry_run)
+                db_anonymizer.anonymize_k_vermerkart(dry_run=args.dry_run)
+                db_anonymizer.anonymize_k_schulfunktionen(dry_run=args.dry_run)
                 db_anonymizer.anonymize_personengruppen(dry_run=args.dry_run)
                 db_anonymizer.reset_schule_credentials(dry_run=args.dry_run)
                 db_anonymizer.delete_and_reload_k_schule(dry_run=args.dry_run)

@@ -45,6 +45,8 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - K_EntlassGrund-Anonymisierung (Bezeichnung zu "Entlassgrund " + ID, schützt Standard-Werte)
 - K_FahrschuelerArt-Anonymisierung (Bezeichnung zu "Fahrschülerart " + ID)
 - K_Haltestelle-Anonymisierung (Bezeichnung zu "Haltestelle " + ID)
+- K_Vermerkart-Anonymisierung (Bezeichnung zu "Vermerk " + ID)
+- K_Schulfunktionen-Anonymisierung (Bezeichnung zu "Schulfunktion " + ID, schützt "Schulleitung")
 - Personengruppen-Anonymisierung (Gruppenname, Zusatzinfo, SammelEmail)
 - SchuleCredentials-Reset (generiert neue RSA 2048-bit Schlüsselpaare und AES 256-bit Schlüssel)
 - Lernplattformen-Anonymisierung (Bezeichnung und Konfiguration)
@@ -214,6 +216,13 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 
 **K_Haltestelle Tabelle:**
 - `Bezeichnung` wird auf "Haltestelle " + ID gesetzt (z.B. "Haltestelle 1", "Haltestelle 5")
+
+**K_Vermerkart Tabelle:**
+- `Bezeichnung` wird auf "Vermerk " + ID gesetzt (z.B. "Vermerk 1", "Vermerk 3")
+
+**K_Schulfunktionen Tabelle:**
+- `Bezeichnung` wird auf "Schulfunktion " + ID gesetzt (z.B. "Schulfunktion 1", "Schulfunktion 5")
+- Geschützte Werte werden NICHT geändert: Schulleitung
 
 **Personengruppen Tabelle:**
 - `Gruppenname` wird auf "Gruppe " + ID gesetzt (z.B. "Gruppe 1", "Gruppe 2")
