@@ -41,6 +41,8 @@ SVWS-Anonym ist ein Tool zur Anonymisierung personenbezogener Daten in SVWS-Date
 - K_TelefonArt-Anonymisierung (Bezeichnung zu "Telefonart " + ID, schützt Standard-Werte)
 - K_Kindergarten-Anonymisierung (Bezeichnung, PLZ/Ort aus K_Ort, Straßennamen, Kontaktfelder)
 - K_Datenschutz-Anonymisierung (Bezeichnung zu "Bezeichnung " + ID, schützt "Verwendung Foto")
+- K_ErzieherArt-Anonymisierung (Bezeichnung zu "Erzieherart " + ID, schützt Standard-Werte)
+- K_EntlassGrund-Anonymisierung (Bezeichnung zu "Entlassgrund " + ID, schützt Standard-Werte)
 - Personengruppen-Anonymisierung (Gruppenname, Zusatzinfo, SammelEmail)
 - SchuleCredentials-Reset (generiert neue RSA 2048-bit Schlüsselpaare und AES 256-bit Schlüssel)
 - Lernplattformen-Anonymisierung (Bezeichnung und Konfiguration)
@@ -196,6 +198,14 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 **K_Datenschutz Tabelle:**
 - `Bezeichnung` wird auf "Bezeichnung " + ID gesetzt (z.B. "Bezeichnung 1", "Bezeichnung 3")
 - Geschützte Werte werden NICHT geändert: "Verwendung Foto"
+
+**K_ErzieherArt Tabelle:**
+- `Bezeichnung` wird auf "Erzieherart " + ID gesetzt (z.B. "Erzieherart 1", "Erzieherart 5")
+- Geschützte Werte werden NICHT geändert: Vater, Mutter, Schüler ist volljährig, Schülerin ist volljährig, Eltern, Sonstige
+
+**K_EntlassGrund Tabelle:**
+- `Bezeichnung` wird auf "Entlassgrund " + ID gesetzt (z.B. "Entlassgrund 1", "Entlassgrund 5")
+- Geschützte Werte werden NICHT geändert: Schulpflicht endet, Normaler Abschluss, Ohne Angabe, Wechsel zu anderer Schule
 
 **Personengruppen Tabelle:**
 - `Gruppenname` wird auf "Gruppe " + ID gesetzt (z.B. "Gruppe 1", "Gruppe 2")

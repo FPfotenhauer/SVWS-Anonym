@@ -2191,6 +2191,140 @@ class DatabaseAnonymizer:
         finally:
             cursor.close()
 
+    def anonymize_k_erzieherart(self, dry_run=False):
+        """Update K_ErzieherArt.Bezeichnung with 'Erzieherart '+ID, excluding protected values."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_ErzieherArt'")
+            if not cursor.fetchone():
+                print("\nSkipping K_ErzieherArt: table not found")
+                return 0
+
+            # Protected values that should not be changed
+            protected_values = ["Vater", "Mutter", "Schüler ist volljährig", "Schülerin ist volljährig", "Eltern", "Sonstige"]
+            placeholders = ",".join(["%s"] * len(protected_values))
+
+            # Get records where Bezeichnung IS NOT NULL and not in protected list
+            query = f"SELECT ID, Bezeichnung FROM K_ErzieherArt WHERE Bezeichnung IS NOT NULL AND Bezeichnung NOT IN ({placeholders})"
+            cursor.execute(query, protected_values)
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo K_ErzieherArt records found with non-NULL Bezeichnung (excluding protected values)")
+                return 0
+
+            print(f"\nFound {len(records)} records in K_ErzieherArt table with non-NULL Bezeichnung (excluding protected values)")
+
+            if dry_run:
+                print("\nDRY RUN - K_ErzieherArt Bezeichnung update:")
+
+            updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+
+            for record in records:
+                record_id = record.get("ID")
+                old_bezeichnung = record.get("Bezeichnung")
+                new_bezeichnung = f"Erzieherart {record_id}"
+
+                if dry_run:
+                    print(f"  ID {record_id}: Bezeichnung '{old_bezeichnung}' -> '{new_bezeichnung}'")
+                else:
+                    update_cursor.execute(
+                        "UPDATE K_ErzieherArt SET Bezeichnung = %s WHERE ID = %s",
+                        (new_bezeichnung, record_id),
+                    )
+
+                updated_count += 1
+
+            if not dry_run:
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Bezeichnung for {updated_count} records in K_ErzieherArt table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
+    def anonymize_k_entlassgrund(self, dry_run=False):
+        """Update K_EntlassGrund.Bezeichnung with 'Entlassgrund '+ID, excluding protected values."""
+        if not self.connection:
+            raise RuntimeError("Database connection is not established")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Check if table exists
+            cursor.execute("SHOW TABLES LIKE 'K_EntlassGrund'")
+            if not cursor.fetchone():
+                print("\nSkipping K_EntlassGrund: table not found")
+                return 0
+
+            # Protected values that should not be changed
+            protected_values = ["Schulpflicht endet", "Normaler Abschluss", "Ohne Angabe", "Wechsel zu anderer Schule"]
+            placeholders = ",".join(["%s"] * len(protected_values))
+
+            # Get records where Bezeichnung IS NOT NULL and not in protected list
+            query = f"SELECT ID, Bezeichnung FROM K_EntlassGrund WHERE Bezeichnung IS NOT NULL AND Bezeichnung NOT IN ({placeholders})"
+            cursor.execute(query, protected_values)
+            records = cursor.fetchall()
+
+            if not records:
+                print("\nNo K_EntlassGrund records found with non-NULL Bezeichnung (excluding protected values)")
+                return 0
+
+            print(f"\nFound {len(records)} records in K_EntlassGrund table with non-NULL Bezeichnung (excluding protected values)")
+
+            if dry_run:
+                print("\nDRY RUN - K_EntlassGrund Bezeichnung update:")
+
+            updated_count = 0
+            update_cursor = self.connection.cursor() if not dry_run else None
+
+            for record in records:
+                record_id = record.get("ID")
+                old_bezeichnung = record.get("Bezeichnung")
+                new_bezeichnung = f"Entlassgrund {record_id}"
+
+                if dry_run:
+                    print(f"  ID {record_id}: Bezeichnung '{old_bezeichnung}' -> '{new_bezeichnung}'")
+                else:
+                    update_cursor.execute(
+                        "UPDATE K_EntlassGrund SET Bezeichnung = %s WHERE ID = %s",
+                        (new_bezeichnung, record_id),
+                    )
+
+                updated_count += 1
+
+            if not dry_run:
+                update_cursor.close()
+                self.connection.commit()
+                print(f"\nSuccessfully updated Bezeichnung for {updated_count} records in K_EntlassGrund table")
+            else:
+                print(f"\nDry run complete. {updated_count} records would be updated")
+
+            return updated_count
+
+        except mysql.connector.Error as e:
+            if not dry_run:
+                self.connection.rollback()
+            print(f"Database error: {e}", file=sys.stderr)
+            raise
+        finally:
+            cursor.close()
+
     def anonymize_allg_adr_ansprechpartner(self, dry_run=False):
         """Anonymize AllgAdrAnsprechpartner table with random names, emails, and phone numbers."""
         if not self.connection:
@@ -4262,6 +4396,8 @@ def main():
                 db_anonymizer.anonymize_k_telefonart(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_kindergarten(dry_run=args.dry_run)
                 db_anonymizer.anonymize_k_datenschutz(dry_run=args.dry_run)
+                db_anonymizer.anonymize_k_erzieherart(dry_run=args.dry_run)
+                db_anonymizer.anonymize_k_entlassgrund(dry_run=args.dry_run)
                 db_anonymizer.anonymize_personengruppen(dry_run=args.dry_run)
                 db_anonymizer.reset_schule_credentials(dry_run=args.dry_run)
                 db_anonymizer.delete_and_reload_k_schule(dry_run=args.dry_run)
