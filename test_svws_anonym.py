@@ -325,5 +325,35 @@ class TestSchuleCredentialsReset(unittest.TestCase):
         self.assertTrue(recorder.get("committed", False))
 
 
+class TestLogoReplacement(unittest.TestCase):
+    """Mock-based test for replacing school logos."""
+
+    def setUp(self):
+        import svws_anonym as sa
+        sa.MYSQL_AVAILABLE = True
+        self.anonymizer = NameAnonymizer()
+        self.db = DatabaseAnonymizer(DummyConfig(), self.anonymizer)
+
+    def test_replaces_all_logo_rows_with_standard_logo(self):
+        recorder = {}
+        self.db.connection = FakeConnection(recorder=recorder)
+
+        deleted_count = self.db.anonymize_eigene_schule_logo(dry_run=False)
+
+        self.assertEqual(deleted_count, 0)
+        self.assertIn("EigeneSchule_Logo", recorder.get("deleted", []))
+        self.assertIn("Logo", recorder.get("deleted", []))
+        inserts = [
+            (query, params)
+            for query, params in recorder.get("insert", [])
+            if "INSERT INTO Logo" in query
+        ]
+        self.assertEqual(len(inserts), 1)
+        self.assertEqual(inserts[0][1][0], 1)
+        self.assertEqual(inserts[0][1][1], "SCHULLOGO_SCHILD")
+        self.assertGreater(len(inserts[0][1][2]), 0)
+        self.assertTrue(recorder.get("committed", False))
+
+
 if __name__ == "__main__":
     unittest.main()

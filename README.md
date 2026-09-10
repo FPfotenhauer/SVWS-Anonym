@@ -181,8 +181,8 @@ Verbindet sich mit der Datenbank und anonymisiert folgende Tabellen:
 - `Durchwahl` wird auf NULL gesetzt
 - `Raum` wird auf NULL gesetzt
 
-**EigeneSchule_Logo Tabelle:**
-- Logo wird durch ein standardisiertes Base64-kodiertes Bild ersetzt
+**Logo Tabelle:**
+- Alle vorhandenen Einträge werden gelöscht und durch `Wappenzeichen_NRW_color.png` als `SCHULLOGO_SCHILD` ersetzt
 
 **EigeneSchule_Texte Tabelle:**
 - Alle Einträge werden gelöscht (vollständige Bereinigung)

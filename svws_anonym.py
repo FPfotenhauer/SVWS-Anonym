@@ -2115,54 +2115,66 @@ class DatabaseAnonymizer:
             cursor.close()
 
     def anonymize_eigene_schule_logo(self, dry_run=False):
-        """Replace logo in EigeneSchule_Logo table with provided base64 data."""
+        """Clear EigeneSchule_Logo and replace Logo with the standard school logo."""
         if not self.connection:
             raise RuntimeError("Database connection is not established")
 
         try:
             cursor = self.connection.cursor(dictionary=True)
             
-            # Ensure table exists
             cursor.execute("SHOW TABLES LIKE 'EigeneSchule_Logo'")
-            if not cursor.fetchone():
-                print("\nSkipping EigeneSchule_Logo update: table 'EigeneSchule_Logo' not found")
+            eigene_schule_logo_exists = bool(cursor.fetchone())
+
+            cursor.execute("SHOW TABLES LIKE 'Logo'")
+            logo_exists = bool(cursor.fetchone())
+            if not eigene_schule_logo_exists and not logo_exists:
+                print("\nSkipping logo update: no logo table found")
                 return 0
 
-            # Get the EigeneSchule ID
-            cursor.execute("SELECT ID FROM EigeneSchule LIMIT 1")
-            result = cursor.fetchone()
-            eigene_schule_id = result["ID"] if result else 1
+            eigene_schule_logo_total = 0
+            if eigene_schule_logo_exists:
+                cursor.execute("SELECT COUNT(*) AS cnt FROM EigeneSchule_Logo")
+                row = cursor.fetchone()
+                eigene_schule_logo_total = row["cnt"] if row and "cnt" in row else 0
 
-            # Read logo from PNG file and convert to base64
-            import base64
-            logo_path = Path(__file__).parent / "Wappenzeichen_NRW_color.png"
-            if logo_path.exists():
-                with open(logo_path, 'rb') as f:
-                    logo_base64 = base64.b64encode(f.read()).decode('utf-8')
-            else:
-                print(f"Warning: Logo file not found at {logo_path}", file=sys.stderr)
-                logo_base64 = ""
-            
-            # Count rows
-            cursor.execute("SELECT COUNT(*) AS cnt FROM EigeneSchule_Logo")
-            row = cursor.fetchone()
-            total = row["cnt"] if row and "cnt" in row else 0
+            logo_total = 0
+            logo_base64 = ""
+            if logo_exists:
+                cursor.execute("SELECT COUNT(*) AS cnt FROM Logo")
+                row = cursor.fetchone()
+                logo_total = row["cnt"] if row and "cnt" in row else 0
+
+                logo_path = Path(__file__).parent / "Wappenzeichen_NRW_color.png"
+                with open(logo_path, "rb") as logo_file:
+                    logo_base64 = base64.b64encode(logo_file.read()).decode("utf-8")
+
+            total = eigene_schule_logo_total + logo_total
 
             if dry_run:
-                print("\nDRY RUN - EigeneSchule_Logo update:")
-                print(f"  Existing rows: {total} -> will delete all")
-                print(f"  Will insert EigeneSchule_ID={eigene_schule_id} with LogoBase64 length {len(logo_base64)}")
+                if eigene_schule_logo_exists:
+                    print("\nDRY RUN - EigeneSchule_Logo deletion:")
+                    print(f"  Existing rows: {eigene_schule_logo_total} -> will delete all")
+                if logo_exists:
+                    print("\nDRY RUN - Logo replacement:")
+                    print(f"  Existing rows: {logo_total} -> will delete all")
+                    print(f"  Will insert SCHULLOGO_SCHILD with LogoBase64 length {len(logo_base64)}")
                 return total
             else:
                 update_cursor = self.connection.cursor()
-                update_cursor.execute("DELETE FROM EigeneSchule_Logo")
-                update_cursor.execute(
-                    "INSERT INTO EigeneSchule_Logo (EigeneSchule_ID, LogoBase64) VALUES (%s, %s)",
-                    (eigene_schule_id, logo_base64),
-                )
+                if eigene_schule_logo_exists:
+                    update_cursor.execute("DELETE FROM EigeneSchule_Logo")
+                if logo_exists:
+                    update_cursor.execute("DELETE FROM Logo")
+                    update_cursor.execute(
+                        "INSERT INTO Logo (id, kennung, logoBase64) VALUES (%s, %s, %s)",
+                        (1, "SCHULLOGO_SCHILD", logo_base64),
+                    )
                 update_cursor.close()
                 self.connection.commit()
-                print(f"\nSuccessfully reset EigeneSchule_Logo (deleted {total} rows, inserted 1 row)")
+                print(
+                    f"\nSuccessfully updated logos (deleted {eigene_schule_logo_total} rows "
+                    f"from EigeneSchule_Logo and {logo_total} rows from Logo, inserted 1 row into Logo)"
+                )
                 return total
 
         except mysql.connector.Error as e:
