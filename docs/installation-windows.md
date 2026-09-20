@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Installation unter Windows
+permalink: /installation-windows/
 ---
 
 # Installation unter Windows

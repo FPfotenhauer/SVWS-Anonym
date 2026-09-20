@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Installation unter macOS
+permalink: /installation-macOS/
 ---
 
 # Installation unter macOS

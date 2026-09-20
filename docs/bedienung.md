@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Bedienung
+permalink: /bedienung/
 ---
 
 # Bedienung

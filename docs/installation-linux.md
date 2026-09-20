@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Installation unter Linux
+permalink: /installation-linux/
 ---
 
 # Installation unter Linux

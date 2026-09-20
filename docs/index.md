@@ -11,13 +11,13 @@ Anwenderdokumentation für SVWS-Anonym. Das Tool anonymisiert personenbezogene D
 
 ## Dokumentation
 
-- [Installation unter Windows](installation-windows.html)
-- [Installation unter macOS](installation-macOS.html)
-- [Installation unter Linux](installation-linux.html)
-- [Konfiguration](konfiguration.html)
-- [Bedienung](bedienung.html)
-- [Anonymisierte Daten](anonymisierte-daten.html)
-- [Fehlerbehebung](fehlerbehebung.html)
+- [Installation unter Windows](installation-windows/)
+- [Installation unter macOS](installation-macOS/)
+- [Installation unter Linux](installation-linux/)
+- [Konfiguration](konfiguration/)
+- [Bedienung](bedienung/)
+- [Anonymisierte Daten](anonymisierte-daten/)
+- [Fehlerbehebung](fehlerbehebung/)
 
 ## Schnellstart
 

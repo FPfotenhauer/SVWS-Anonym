@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Konfiguration
+permalink: /konfiguration/
 ---
 
 # Konfiguration

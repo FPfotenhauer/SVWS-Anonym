@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Anonymisierte Daten
+permalink: /anonymisierte-daten/
 ---
 
 # Anonymisierte Daten

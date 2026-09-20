@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Fehlerbehebung
+permalink: /fehlerbehebung/
 ---
 
 # Fehlerbehebung
