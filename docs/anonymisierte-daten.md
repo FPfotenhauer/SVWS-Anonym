@@ -1,3 +1,8 @@
+---
+layout: default
+title: Anonymisierte Daten
+---
+
 # Anonymisierte Daten
 
 Das Programm anonymisiert unter anderem folgende Bereiche:

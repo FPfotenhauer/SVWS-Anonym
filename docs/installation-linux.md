@@ -1,3 +1,8 @@
+---
+layout: default
+title: Installation unter Linux
+---
+
 # Installation unter Linux
 
 ## 1. Python installieren
@@ -37,7 +42,7 @@ python -m pip install mysql-connector-python cryptography
 cp config.example.json config.json
 ```
 
-Bearbeiten Sie anschließend `config.json`. Details stehen in [Konfiguration](konfiguration.md).
+Bearbeiten Sie anschließend `config.json`. Details stehen in [Konfiguration](konfiguration.html).
 
 Optional kann das Skript ausführbar gemacht werden:
 

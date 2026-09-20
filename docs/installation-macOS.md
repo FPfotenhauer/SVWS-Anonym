@@ -1,3 +1,8 @@
+---
+layout: default
+title: Installation unter macOS
+---
+
 # Installation unter macOS
 
 ## 1. Python installieren
@@ -36,7 +41,7 @@ python -m pip install mysql-connector-python cryptography
 cp config.example.json config.json
 ```
 
-Bearbeiten Sie anschließend `config.json`. Details stehen in [Konfiguration](konfiguration.md).
+Bearbeiten Sie anschließend `config.json`. Details stehen in [Konfiguration](konfiguration.html).
 
 ## 5. Installation prüfen
 

@@ -1,3 +1,8 @@
+---
+layout: default
+title: Bedienung
+---
+
 # Bedienung
 
 ## Hilfe anzeigen

@@ -1,3 +1,8 @@
+---
+layout: default
+title: Fehlerbehebung
+---
+
 # Fehlerbehebung
 
 ## Python wird nicht gefunden

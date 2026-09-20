@@ -1,3 +1,8 @@
+---
+layout: default
+title: Konfiguration
+---
+
 # Konfiguration
 
 ## Konfigurationsdatei erstellen
