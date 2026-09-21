@@ -279,8 +279,18 @@ class TestAdminCleanup(unittest.TestCase):
         self.assertTrue(any("INSERT INTO Credentials" in q for q, _ in inserts))
         self.assertTrue(any("INSERT INTO BenutzerAllgemein" in q for q, _ in inserts))
         self.assertTrue(any("INSERT INTO Benutzer (ID, Typ" in q for q, _ in inserts))
+        self.assertIn("BenutzerEmail", recorder.get("deleted", []))
         # Ensure commit occurred
         self.assertTrue(recorder.get("committed", False))
+
+    def test_delete_general_admin_tables_dry_run_keeps_benutzer_email(self):
+        counts = {"BenutzerEmail": 2}
+        recorder = {}
+        self.db.connection = FakeConnection(script={"counts": counts}, recorder=recorder)
+
+        self.db.delete_general_admin_tables(dry_run=True)
+
+        self.assertNotIn("BenutzerEmail", recorder.get("deleted", []))
 
 
 class TestSchuleCredentialsReset(unittest.TestCase):

@@ -36,8 +36,8 @@ Es werden keine pauschalen `UPDATE`- oder `DELETE`-Anweisungen fuer unbekannte T
 
 ### Administration, Konfiguration und Synchronisation
 
+~~BenutzerEmail~~ (geprueft am 2026-09-20)
 ```text
-BenutzerEmail
 BenutzergruppenKompetenzen
 BenutzergruppenMitglieder
 BenutzerKompetenzen
